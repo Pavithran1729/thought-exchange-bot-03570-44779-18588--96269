@@ -29,7 +29,7 @@ const Home = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
               <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6">
-                <Link to="/generator">
+                <Link to="/auth">
                   Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
@@ -170,7 +170,7 @@ const Home = () => {
               Join thousands of professionals using AI to streamline their workflow
             </p>
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6">
-              <Link to="/generator">
+              <Link to="/auth">
                 Start Generating Now <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>

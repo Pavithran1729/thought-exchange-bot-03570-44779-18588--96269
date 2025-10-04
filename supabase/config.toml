@@ -1,1 +1,10 @@
 project_id = "xdppsvkzskukdtuqnizq"
+
+[functions.generate-report]
+verify_jwt = true
+
+[functions.enhance-content]
+verify_jwt = true
+
+[functions.extract-insights]
+verify_jwt = true

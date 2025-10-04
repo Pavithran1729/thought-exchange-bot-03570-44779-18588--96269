@@ -5,17 +5,28 @@ import { PreviewPanel } from "@/components/ReportBuilder/PreviewPanel";
 import { ExportDialog } from "@/components/ReportBuilder/ExportDialog";
 import { processText, convertLatexToReadable, type ExtractedData } from "@/utils/regexProcessor";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LogOut, Save } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useAI } from "@/hooks/useAI";
+import { useReports } from "@/hooks/useReports";
+import { useToast } from "@/hooks/use-toast";
 
 const Generator = () => {
   const [reportData, setReportData] = useState({
     title: "",
     content: "",
     extractedData: [] as ExtractedData[],
+    templateId: "default",
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [currentReportId, setCurrentReportId] = useState<string | null>(null);
+  
+  const { signOut } = useAuth();
+  const { generateReport, enhanceContent } = useAI();
+  const { saveReport } = useReports();
+  const { toast } = useToast();
 
   const handleGenerate = async ({
     title,
@@ -32,28 +43,80 @@ const Generator = () => {
     
     let processedContent = content;
     let extracted: ExtractedData[] = [];
+    let isAIGenerated = false;
 
-    // TODO: When Lovable Cloud is enabled, implement AI generation
-    if (useAI && !content.trim()) {
-      // Simulate AI generation for now
-      processedContent = `# ${title}\n\n## Executive Summary\n\nThis is a comprehensive report on ${title}. The following sections provide detailed analysis and insights.\n\n## Main Findings\n\nKey findings will be generated here based on the title.\n\n## Conclusion\n\nConclusion and recommendations will be provided.`;
-    } else if (useAI && content.trim()) {
-      // Enhance existing content
-      processedContent = content;
+    try {
+      // AI Generation or Enhancement
+      if (useAI && !content.trim()) {
+        // Generate new content from title
+        const generated = await generateReport(title, reportData.templateId);
+        if (generated) {
+          processedContent = generated;
+          isAIGenerated = true;
+        } else {
+          throw new Error("Failed to generate content");
+        }
+      } else if (useAI && content.trim()) {
+        // Enhance existing content
+        const enhanced = await enhanceContent(content, 'improve');
+        if (enhanced) {
+          processedContent = enhanced;
+          isAIGenerated = true;
+        } else {
+          throw new Error("Failed to enhance content");
+        }
+      }
+
+      // Regex processing
+      if (useRegex) {
+        processedContent = convertLatexToReadable(processedContent);
+        extracted = processText(processedContent);
+      }
+
+      setReportData({
+        title,
+        content: processedContent,
+        extractedData: extracted,
+        templateId: reportData.templateId,
+      });
+      
+      toast({
+        title: "Report generated!",
+        description: "Your report has been generated successfully.",
+      });
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Failed to generate report",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSaveReport = async () => {
+    if (!reportData.title || !reportData.content) {
+      toast({
+        title: "Cannot save",
+        description: "Please generate a report first",
+        variant: "destructive",
+      });
+      return;
     }
 
-    if (useRegex) {
-      processedContent = convertLatexToReadable(processedContent);
-      extracted = processText(processedContent);
-    }
+    const savedReport = await saveReport(
+      reportData.title,
+      reportData.content,
+      reportData.templateId,
+      reportData.extractedData,
+      isGenerating
+    );
 
-    setReportData({
-      title,
-      content: processedContent,
-      extractedData: extracted,
-    });
-    
-    setIsGenerating(false);
+    if (savedReport) {
+      setCurrentReportId(savedReport.id);
+    }
   };
 
   return (
@@ -75,6 +138,18 @@ const Generator = () => {
               <h1 className="text-xl font-bold">
                 {reportData.title || "AI Report Generator"}
               </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              {reportData.content && (
+                <Button variant="outline" size="sm" onClick={handleSaveReport}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Report
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => signOut()}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </div>
         </header>
