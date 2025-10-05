@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -194,47 +195,76 @@ export const PreviewPanel = ({ title, content, extractedData, onExportClick }: P
                       className={`prose prose-invert max-w-none ${template.styles.spacing.section}`}
                     >
                       <ReactMarkdown
-                        remarkPlugins={[remarkMath]}
+                        remarkPlugins={[remarkMath, remarkGfm]}
                         rehypePlugins={[rehypeKatex]}
                         components={{
                           h1: ({ ...props }) => (
-                            <h1 className={`text-${template.styles.fontSize.h2} font-bold mt-6 mb-3 ${template.styles.fontFamily.heading} ${template.styles.colors.heading}`} {...props} />
+                            <h1 className="text-3xl font-bold mt-8 mb-4 text-foreground border-b border-border pb-2" {...props} />
                           ),
                           h2: ({ ...props }) => (
-                            <h2 className={`text-${template.styles.fontSize.h3} font-bold mt-5 mb-2 ${template.styles.fontFamily.heading} ${template.styles.colors.heading}`} {...props} />
+                            <h2 className="text-2xl font-bold mt-6 mb-3 text-foreground" {...props} />
                           ),
                           h3: ({ ...props }) => (
-                            <h3 className={`text-${template.styles.fontSize.h3} font-bold mt-4 mb-2 ${template.styles.fontFamily.heading} ${template.styles.colors.heading}`} {...props} />
+                            <h3 className="text-xl font-semibold mt-5 mb-2 text-foreground" {...props} />
+                          ),
+                          h4: ({ ...props }) => (
+                            <h4 className="text-lg font-semibold mt-4 mb-2 text-foreground" {...props} />
                           ),
                           p: ({ ...props }) => (
-                            <p className={`text-${template.styles.fontSize.body} ${template.styles.fontFamily.body} ${template.styles.colors.body} leading-relaxed ${template.styles.spacing.paragraph}`} {...props} />
+                            <p className="text-base leading-7 mb-4 text-foreground/90" {...props} />
                           ),
                           strong: ({ ...props }) => (
-                            <strong className="font-bold text-primary" {...props} />
+                            <strong className="font-bold text-foreground" {...props} />
                           ),
                           em: ({ ...props }) => (
-                            <em className="italic" {...props} />
+                            <em className="italic text-foreground/90" {...props} />
                           ),
                           code: ({ inline, ...props }: any) => 
                             inline ? (
-                              <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-accent" {...props} />
+                              <code className="bg-muted px-2 py-0.5 rounded text-sm font-mono text-primary border border-border" {...props} />
                             ) : (
-                              <code className="block bg-muted p-4 rounded-lg text-sm font-mono overflow-x-auto" {...props} />
+                              <code className="block bg-muted p-4 rounded-lg text-sm font-mono overflow-x-auto border border-border my-4" {...props} />
                             ),
+                          pre: ({ ...props }) => (
+                            <pre className="bg-muted p-4 rounded-lg overflow-x-auto border border-border my-4" {...props} />
+                          ),
                           ul: ({ ...props }) => (
-                            <ul className="list-disc list-inside space-y-2 my-4" {...props} />
+                            <ul className="list-disc ml-6 space-y-2 my-4 text-foreground/90" {...props} />
                           ),
                           ol: ({ ...props }) => (
-                            <ol className="list-decimal list-inside space-y-2 my-4" {...props} />
+                            <ol className="list-decimal ml-6 space-y-2 my-4 text-foreground/90" {...props} />
                           ),
                           li: ({ ...props }) => (
-                            <li className="ml-4" {...props} />
+                            <li className="leading-7" {...props} />
                           ),
                           blockquote: ({ ...props }) => (
-                            <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground" {...props} />
+                            <blockquote className="border-l-4 border-primary pl-6 py-2 my-4 italic text-muted-foreground bg-muted/30 rounded-r" {...props} />
                           ),
                           hr: ({ ...props }) => (
                             <hr className="my-8 border-border" {...props} />
+                          ),
+                          table: ({ ...props }) => (
+                            <div className="overflow-x-auto my-6">
+                              <table className="min-w-full border-collapse border border-border" {...props} />
+                            </div>
+                          ),
+                          thead: ({ ...props }) => (
+                            <thead className="bg-muted" {...props} />
+                          ),
+                          tbody: ({ ...props }) => (
+                            <tbody className="divide-y divide-border" {...props} />
+                          ),
+                          tr: ({ ...props }) => (
+                            <tr className="border-b border-border hover:bg-muted/50 transition-colors" {...props} />
+                          ),
+                          th: ({ ...props }) => (
+                            <th className="px-4 py-3 text-left font-semibold text-foreground border border-border" {...props} />
+                          ),
+                          td: ({ ...props }) => (
+                            <td className="px-4 py-3 text-foreground/90 border border-border" {...props} />
+                          ),
+                          a: ({ ...props }) => (
+                            <a className="text-primary underline hover:text-primary/80 transition-colors" {...props} />
                           ),
                         }}
                       >

@@ -58,6 +58,11 @@ export const exportToPDF = async (
   const sections = parseMarkdownToSections(content);
   pdf.setTextColor(0, 0, 0);
 
+  // Helper to process text with bold/italic
+  const processTextStyle = (text: string) => {
+    return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+  };
+
   sections.forEach((section) => {
     checkPageBreak(15);
 
@@ -71,12 +76,17 @@ export const exportToPDF = async (
           pdf.setFontSize(16);
           pdf.setFont('helvetica', 'bold');
           yPosition += 8;
-        } else {
+        } else if (section.level === 3) {
           pdf.setFontSize(14);
           pdf.setFont('helvetica', 'bold');
           yPosition += 6;
+        } else {
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'bold');
+          yPosition += 5;
         }
-        const headingLines = pdf.splitTextToSize(section.content, contentWidth);
+        const cleanHeading = processTextStyle(section.content);
+        const headingLines = pdf.splitTextToSize(cleanHeading, contentWidth);
         pdf.text(headingLines, margin, yPosition);
         yPosition += headingLines.length * 7 + 5;
         
@@ -89,19 +99,92 @@ export const exportToPDF = async (
 
       case 'paragraph':
         pdf.setFontSize(11);
-        pdf.setFont('helvetica', 'normal');
-        const paraLines = pdf.splitTextToSize(section.content, contentWidth);
-        pdf.text(paraLines, margin, yPosition);
-        yPosition += paraLines.length * 6 + 3;
+        
+        // Handle bold and italic text
+        const parts = section.content.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+        let xOffset = margin;
+        
+        parts.forEach((part) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            pdf.setFont('helvetica', 'bold');
+            const text = part.slice(2, -2);
+            pdf.text(text, xOffset, yPosition);
+            xOffset += pdf.getTextWidth(text);
+          } else if (part.startsWith('*') && part.endsWith('*')) {
+            pdf.setFont('helvetica', 'italic');
+            const text = part.slice(1, -1);
+            pdf.text(text, xOffset, yPosition);
+            xOffset += pdf.getTextWidth(text);
+          } else if (part) {
+            pdf.setFont('helvetica', 'normal');
+            const paraLines = pdf.splitTextToSize(part, contentWidth - (xOffset - margin));
+            pdf.text(paraLines, xOffset, yPosition);
+            yPosition += (paraLines.length - 1) * 6;
+            xOffset = margin;
+          }
+        });
+        yPosition += 9;
         break;
 
       case 'list-item':
+      case 'ordered-list-item':
         pdf.setFontSize(11);
         pdf.setFont('helvetica', 'normal');
-        pdf.text('•', margin, yPosition);
-        const listLines = pdf.splitTextToSize(section.content, contentWidth - 5);
-        pdf.text(listLines, margin + 5, yPosition);
+        const bullet = section.type === 'ordered-list-item' ? '  ' : '•';
+        pdf.text(bullet, margin, yPosition);
+        const cleanList = processTextStyle(section.content);
+        const listLines = pdf.splitTextToSize(cleanList, contentWidth - 8);
+        pdf.text(listLines, margin + 8, yPosition);
         yPosition += listLines.length * 6 + 2;
+        break;
+
+      case 'table':
+        if (section.rows && section.rows.length > 0) {
+          checkPageBreak(20 + section.rows.length * 8);
+          
+          const colWidth = contentWidth / section.rows[0].length;
+          const rowHeight = 8;
+          
+          // Draw table
+          section.rows.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+              const x = margin + colIndex * colWidth;
+              const y = yPosition + rowIndex * rowHeight;
+              
+              // Draw cell border
+              pdf.setDrawColor(200, 200, 200);
+              pdf.rect(x, y, colWidth, rowHeight);
+              
+              // Draw cell text
+              if (rowIndex === 0) {
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFillColor(240, 240, 240);
+                pdf.rect(x, y, colWidth, rowHeight, 'F');
+              } else {
+                pdf.setFont('helvetica', 'normal');
+              }
+              
+              pdf.setFontSize(10);
+              const cellText = pdf.splitTextToSize(cell, colWidth - 2);
+              pdf.text(cellText, x + 1, y + 5);
+            });
+          });
+          
+          yPosition += section.rows.length * rowHeight + 10;
+        }
+        break;
+
+      case 'code':
+        checkPageBreak(30);
+        pdf.setFillColor(245, 245, 245);
+        pdf.rect(margin, yPosition, contentWidth, 20, 'F');
+        pdf.setFont('courier', 'normal');
+        pdf.setFontSize(9);
+        const codeLines = section.content.split('\n');
+        codeLines.forEach((line, idx) => {
+          pdf.text(line, margin + 2, yPosition + 5 + idx * 4);
+        });
+        yPosition += Math.max(20, codeLines.length * 4 + 10);
         break;
 
       case 'space':

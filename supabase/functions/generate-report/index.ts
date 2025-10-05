@@ -27,29 +27,38 @@ serve(async (req) => {
 
     console.log('Generating report for title:', title);
 
-    const systemPrompt = `You are an expert report writer. Generate comprehensive, well-structured reports in markdown format.
+    const systemPrompt = `You are an expert report writer. Generate comprehensive, professionally formatted reports in markdown format that match academic and corporate standards.
 
 Structure your reports with:
-1. Clear hierarchy using markdown headers (# ## ###)
+1. Clear hierarchy using markdown headers (# ## ### ####)
 2. Executive summary section
 3. Detailed findings with subsections
-4. Data-driven insights
+4. Data-driven insights with tables and statistics
 5. Actionable recommendations
 6. Professional conclusion
 
-Use proper markdown formatting including:
-- Headers for sections
-- Bullet points and numbered lists
-- **Bold** and *italic* text for emphasis
-- Tables when presenting data
-- Code blocks if relevant
+CRITICAL FORMATTING REQUIREMENTS:
+- Use **bold text** for emphasis and key terms (e.g., **Important:** or **Key Finding**)
+- Use *italic text* for definitions and foreign terms
+- Create tables using markdown table syntax for data presentation:
+  | Header 1 | Header 2 | Header 3 |
+  |----------|----------|----------|
+  | Data 1   | Data 2   | Data 3   |
+- Use numbered lists (1. 2. 3.) for sequential steps
+- Use bullet points (- or *) for non-sequential items
+- Include code blocks with \`\`\` for technical content
 
 For mathematical formulas and equations, use LaTeX notation:
 - Inline math: $formula$ (e.g., $E = mc^2$ for energy-mass equivalence)
 - Display math: $$formula$$ (e.g., $$\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$)
-- Use proper LaTeX syntax for fractions, integrals, summations, Greek letters, etc.
+- Use proper LaTeX syntax for fractions $\\frac{a}{b}$, integrals $\\int$, summations $\\sum$, Greek letters $\\alpha, \\beta, \\gamma$
 
-Make the content ${template === 'professional' ? 'formal and corporate' : template === 'creative' ? 'engaging and innovative' : template === 'academic' ? 'scholarly and research-focused' : 'clear and informative'}.`;
+STYLE GUIDELINES:
+- Use proper spacing between sections
+- Bold all subheadings (## **Introduction**)
+- Include tables for comparative data
+- Use horizontal rules (---) to separate major sections
+- Make the content ${template === 'professional' ? 'formal and corporate with data tables' : template === 'creative' ? 'engaging and innovative with visual elements' : template === 'academic' ? 'scholarly and research-focused with citations and formulas' : 'clear and informative with structured data'}.`;
 
     const userPrompt = `Generate a comprehensive report on: "${title}"${additionalContext ? `\n\nAdditional context: ${additionalContext}` : ''}`;
 

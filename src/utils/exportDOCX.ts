@@ -1,4 +1,4 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign } from 'docx';
 import { saveAs } from 'file-saver';
 import { sanitizeFilename, formatDate, parseMarkdownToSections, createExtractedDataTable } from './exportHelpers';
 import type { Template } from './templates';
@@ -11,7 +11,7 @@ export const exportToDOCX = async (
   extractedData: ExtractedData[]
 ): Promise<void> => {
   const sections = parseMarkdownToSections(content);
-  const documentChildren: Paragraph[] = [];
+  const documentChildren: (Paragraph | Table)[] = [];
 
   // Add title
   documentChildren.push(
@@ -40,6 +40,37 @@ export const exportToDOCX = async (
     })
   );
 
+  // Helper to parse text with bold/italic
+  const parseTextRuns = (text: string): TextRun[] => {
+    const runs: TextRun[] = [];
+    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+    
+    parts.forEach((part) => {
+      if (!part) return;
+      
+      if (part.startsWith('**') && part.endsWith('**')) {
+        runs.push(new TextRun({
+          text: part.slice(2, -2),
+          bold: true,
+          size: 22,
+        }));
+      } else if (part.startsWith('*') && part.endsWith('*')) {
+        runs.push(new TextRun({
+          text: part.slice(1, -1),
+          italics: true,
+          size: 22,
+        }));
+      } else {
+        runs.push(new TextRun({
+          text: part,
+          size: 22,
+        }));
+      }
+    });
+    
+    return runs;
+  };
+
   // Add content sections
   sections.forEach((section) => {
     switch (section.type) {
@@ -48,11 +79,13 @@ export const exportToDOCX = async (
           ? HeadingLevel.HEADING_1 
           : section.level === 2 
           ? HeadingLevel.HEADING_2 
-          : HeadingLevel.HEADING_3;
+          : section.level === 3
+          ? HeadingLevel.HEADING_3
+          : HeadingLevel.HEADING_4;
 
         documentChildren.push(
           new Paragraph({
-            text: section.content,
+            children: parseTextRuns(section.content),
             heading: headingLevel,
             spacing: {
               before: 240,
@@ -74,14 +107,10 @@ export const exportToDOCX = async (
         if (section.content.trim()) {
           documentChildren.push(
             new Paragraph({
-              children: [
-                new TextRun({
-                  text: section.content,
-                  size: 22,
-                }),
-              ],
+              children: parseTextRuns(section.content),
               spacing: {
-                after: 120,
+                after: 160,
+                line: 360,
               },
             })
           );
@@ -89,19 +118,95 @@ export const exportToDOCX = async (
         break;
 
       case 'list-item':
+      case 'ordered-list-item':
+        documentChildren.push(
+          new Paragraph({
+            children: parseTextRuns(section.content),
+            bullet: section.type === 'ordered-list-item' ? undefined : {
+              level: 0,
+            },
+            numbering: section.type === 'ordered-list-item' ? {
+              reference: 'default-numbering',
+              level: 0,
+            } : undefined,
+            spacing: {
+              after: 100,
+            },
+          })
+        );
+        break;
+
+      case 'table':
+        if (section.rows && section.rows.length > 0) {
+          const tableRows = section.rows.map((row, rowIndex) => 
+            new TableRow({
+              children: row.map(cell => 
+                new TableCell({
+                  children: [new Paragraph({
+                    children: [new TextRun({
+                      text: cell,
+                      bold: rowIndex === 0,
+                      size: 20,
+                    })],
+                  })],
+                  shading: rowIndex === 0 ? {
+                    fill: 'F0F0F0',
+                  } : undefined,
+                  verticalAlign: VerticalAlign.CENTER,
+                  margins: {
+                    top: 100,
+                    bottom: 100,
+                    left: 100,
+                    right: 100,
+                  },
+                })
+              ),
+            })
+          );
+
+          documentChildren.push(
+            new Table({
+              rows: tableRows,
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1 },
+                bottom: { style: BorderStyle.SINGLE, size: 1 },
+                left: { style: BorderStyle.SINGLE, size: 1 },
+                right: { style: BorderStyle.SINGLE, size: 1 },
+                insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+                insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+              },
+            })
+          );
+
+          documentChildren.push(
+            new Paragraph({
+              text: '',
+              spacing: { after: 200 },
+            })
+          );
+        }
+        break;
+
+      case 'code':
         documentChildren.push(
           new Paragraph({
             children: [
               new TextRun({
                 text: section.content,
-                size: 22,
+                font: 'Courier New',
+                size: 18,
               }),
             ],
-            bullet: {
-              level: 0,
+            shading: {
+              fill: 'F5F5F5',
             },
             spacing: {
-              after: 80,
+              before: 120,
+              after: 120,
             },
           })
         );
@@ -183,9 +288,29 @@ export const exportToDOCX = async (
 
   // Create document
   const doc = new Document({
+    numbering: {
+      config: [{
+        reference: 'default-numbering',
+        levels: [{
+          level: 0,
+          format: 'decimal',
+          text: '%1.',
+          alignment: AlignmentType.LEFT,
+        }],
+      }],
+    },
     sections: [
       {
-        properties: {},
+        properties: {
+          page: {
+            margin: {
+              top: 1440,
+              right: 1440,
+              bottom: 1440,
+              left: 1440,
+            },
+          },
+        },
         children: documentChildren,
       },
     ],
