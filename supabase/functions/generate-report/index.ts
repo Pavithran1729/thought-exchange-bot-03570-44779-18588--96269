@@ -44,6 +44,11 @@ Use proper markdown formatting including:
 - Tables when presenting data
 - Code blocks if relevant
 
+For mathematical formulas and equations, use LaTeX notation:
+- Inline math: $formula$ (e.g., $E = mc^2$ for energy-mass equivalence)
+- Display math: $$formula$$ (e.g., $$\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$)
+- Use proper LaTeX syntax for fractions, integrals, summations, Greek letters, etc.
+
 Make the content ${template === 'professional' ? 'formal and corporate' : template === 'creative' ? 'engaging and innovative' : template === 'academic' ? 'scholarly and research-focused' : 'clear and informative'}.`;
 
     const userPrompt = `Generate a comprehensive report on: "${title}"${additionalContext ? `\n\nAdditional context: ${additionalContext}` : ''}`;

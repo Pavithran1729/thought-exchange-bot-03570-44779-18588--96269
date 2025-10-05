@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -117,7 +120,7 @@ export const PreviewPanel = ({ title, content, extractedData, onExportClick }: P
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 overflow-hidden flex flex-col">
+      <CardContent className="flex-1 overflow-auto flex flex-col">
         {!hasContent ? (
           <div className="flex-1 flex items-center justify-center text-center p-8">
             <div className="space-y-4">
@@ -191,6 +194,8 @@ export const PreviewPanel = ({ title, content, extractedData, onExportClick }: P
                       className={`prose prose-invert max-w-none ${template.styles.spacing.section}`}
                     >
                       <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
                         components={{
                           h1: ({ ...props }) => (
                             <h1 className={`text-${template.styles.fontSize.h2} font-bold mt-6 mb-3 ${template.styles.fontFamily.heading} ${template.styles.colors.heading}`} {...props} />

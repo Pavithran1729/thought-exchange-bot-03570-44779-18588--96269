@@ -52,7 +52,7 @@ serve(async (req) => {
         userPrompt = `Enhance this content:\n\n${content}`;
     }
 
-    systemPrompt += ` Use a ${tone} tone. Preserve markdown formatting.`;
+    systemPrompt += ` Use a ${tone} tone. Preserve markdown formatting and any LaTeX mathematical formulas (both inline $...$ and display $$...$$) in their exact original format.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
