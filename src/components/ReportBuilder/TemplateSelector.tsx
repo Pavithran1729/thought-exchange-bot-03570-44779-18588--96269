@@ -12,10 +12,10 @@ import { templates, type Template } from "@/utils/templates";
 
 interface TemplateSelectorProps {
   selectedTemplate: string;
-  onSelectTemplate: (templateId: string) => void;
+  onTemplateChange: (templateId: string) => void;
 }
 
-export const TemplateSelector = ({ selectedTemplate, onSelectTemplate }: TemplateSelectorProps) => {
+export const TemplateSelector = ({ selectedTemplate, onTemplateChange }: TemplateSelectorProps) => {
   const currentTemplate = templates.find(t => t.id === selectedTemplate) || templates[0];
 
   return (
@@ -32,7 +32,7 @@ export const TemplateSelector = ({ selectedTemplate, onSelectTemplate }: Templat
         {templates.map((template) => (
           <DropdownMenuItem
             key={template.id}
-            onClick={() => onSelectTemplate(template.id)}
+            onClick={() => onTemplateChange(template.id)}
             className="flex items-center justify-between cursor-pointer"
           >
             <div className="flex flex-col">

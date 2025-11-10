@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -23,15 +23,27 @@ interface PreviewPanelProps {
   content: string;
   extractedData: ExtractedData[];
   onExportClick: () => void;
+  selectedTemplateId?: string;
 }
 
-export const PreviewPanel = ({ title, content, extractedData, onExportClick }: PreviewPanelProps) => {
+export const PreviewPanel = ({ 
+  title, 
+  content, 
+  extractedData, 
+  onExportClick,
+  selectedTemplateId = "default"
+}: PreviewPanelProps) => {
   const hasContent = title || content;
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isHighlightMode, setIsHighlightMode] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState('default');
+  const [selectedTemplate, setSelectedTemplate] = useState(selectedTemplateId);
   const [viewMode, setViewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isTyping, setIsTyping] = useState(false);
+  
+  // Update selected template when prop changes
+  useEffect(() => {
+    setSelectedTemplate(selectedTemplateId);
+  }, [selectedTemplateId]);
   
   const template = getTemplate(selectedTemplate);
   const extractedDataWithPositions = processTextWithPositions(content);
@@ -67,7 +79,7 @@ export const PreviewPanel = ({ title, content, extractedData, onExportClick }: P
             <div className="flex flex-wrap items-center gap-2">
               <TemplateSelector 
                 selectedTemplate={selectedTemplate}
-                onSelectTemplate={setSelectedTemplate}
+                onTemplateChange={setSelectedTemplate}
               />
               
               <Button

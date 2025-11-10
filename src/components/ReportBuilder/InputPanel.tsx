@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Sparkles } from "lucide-react";
 import { FileUploader } from "./FileUploader";
+import { TemplateSelector } from "./TemplateSelector";
 
 interface InputPanelProps {
   onGenerate: (data: {
@@ -14,20 +15,31 @@ interface InputPanelProps {
     content: string;
     useRegex: boolean;
     useAI: boolean;
+    templateId?: string;
   }) => void;
   isGenerating?: boolean;
+  initialTitle?: string;
+  initialContent?: string;
+  initialTemplateId?: string;
 }
 
-export const InputPanel = ({ onGenerate, isGenerating }: InputPanelProps) => {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+export const InputPanel = ({ 
+  onGenerate, 
+  isGenerating,
+  initialTitle = "",
+  initialContent = "",
+  initialTemplateId = "default"
+}: InputPanelProps) => {
+  const [title, setTitle] = useState(initialTitle);
+  const [content, setContent] = useState(initialContent);
   const [useRegex, setUseRegex] = useState(true);
   const [useAI, setUseAI] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState(initialTemplateId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
-      onGenerate({ title, content, useRegex, useAI });
+      onGenerate({ title, content, useRegex, useAI, templateId: selectedTemplate });
     }
   };
 
@@ -44,6 +56,15 @@ export const InputPanel = ({ onGenerate, isGenerating }: InputPanelProps) => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Template Selector */}
+          <div className="space-y-2">
+            <Label>Report Template</Label>
+            <TemplateSelector
+              selectedTemplate={selectedTemplate}
+              onTemplateChange={setSelectedTemplate}
+            />
+          </div>
+
           {/* Title Input */}
           <div className="space-y-2">
             <Label htmlFor="title">Report Title *</Label>

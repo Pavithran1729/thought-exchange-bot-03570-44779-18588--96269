@@ -1,15 +1,42 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Zap, Bot, FileText, Mail, Phone, Calendar, DollarSign } from "lucide-react";
+import { ArrowRight, Zap, Bot, FileText, Mail, Phone, Calendar, DollarSign, FolderOpen, LogOut } from "lucide-react";
 import { BackgroundEffects } from "@/components/BackgroundEffects";
+import { useAuth } from "@/hooks/useAuth";
 
 const Home = () => {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       <BackgroundEffects />
       
       <div className="relative z-10">
+        {/* Header */}
+        {user && (
+          <header className="border-b border-border/50 glass-morphism">
+            <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+              <h1 className="text-xl font-bold">AI Report Generator</h1>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  My Reports
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate("/generator")}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Create Report
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => signOut()}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
+            </div>
+          </header>
+        )}
+
         {/* Hero Section */}
         <section className="container mx-auto px-4 pt-20 pb-32 text-center">
           <div className="max-w-4xl mx-auto space-y-8">
@@ -28,16 +55,30 @@ const Home = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-              <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6">
-                <Link to="/auth">
-                  Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6">
-                <a href="#how-it-works">
-                  See How It Works
-                </a>
-              </Button>
+              {user ? (
+                <>
+                  <Button size="lg" onClick={() => navigate("/generator")} className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6">
+                    Start Creating <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                  <Button variant="outline" size="lg" onClick={() => navigate("/dashboard")} className="text-lg px-8 py-6">
+                    <FolderOpen className="mr-2 h-5 w-5" />
+                    My Reports
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6">
+                    <Link to="/auth">
+                      Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6">
+                    <a href="#how-it-works">
+                      See How It Works
+                    </a>
+                  </Button>
+                </>
+              )}
             </div>
             
             <div className="pt-8 text-sm text-muted-foreground">
