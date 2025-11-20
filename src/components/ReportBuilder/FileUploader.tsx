@@ -26,25 +26,25 @@ export const FileUploader = ({ onFileContent }: FileUploaderProps) => {
   }, []);
 
   const processFile = async (file: File) => {
-    // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024;
+    // Validate file size (max 20MB for PDF/DOCX)
+    const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: "File Too Large",
-        description: "Please upload a file smaller than 10MB",
+        description: "Please upload a file smaller than 20MB",
         variant: "destructive",
       });
       return;
     }
 
     // Validate file type
-    const allowedTypes = ['.txt', '.md', '.csv', '.json'];
+    const allowedTypes = ['.txt', '.md', '.csv', '.json', '.pdf', '.docx'];
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
     
     if (!allowedTypes.includes(fileExtension)) {
       toast({
         title: "Invalid File Type",
-        description: `Please upload a ${allowedTypes.join(', ')} file`,
+        description: `Please upload a TXT, MD, CSV, JSON, PDF, or DOCX file`,
         variant: "destructive",
       });
       return;
@@ -107,9 +107,9 @@ export const FileUploader = ({ onFileContent }: FileUploaderProps) => {
         >
           <label className="flex flex-col items-center justify-center p-6 cursor-pointer">
             <input
-              type="file"
-              accept=".txt,.md,.csv,.json"
-              onChange={handleFileInput}
+            type="file"
+            accept=".txt,.md,.csv,.json,.pdf,.docx"
+            onChange={handleFileInput}
               className="hidden"
               disabled={isProcessing}
             />
@@ -118,7 +118,7 @@ export const FileUploader = ({ onFileContent }: FileUploaderProps) => {
               {isProcessing ? "Processing file..." : "Drop file here or click to upload"}
             </p>
             <p className="text-xs text-muted-foreground">
-              Supports .txt, .md, .csv, .json (max 10MB)
+              Supports TXT, MD, CSV, JSON, PDF, DOCX (with OCR) - max 20MB
             </p>
           </label>
         </Card>
