@@ -1,4 +1,14 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export const parseTextFile = async (file: File): Promise<string> => {
+  const fileExtension = file.name.split('.').pop()?.toLowerCase();
+
+  // Handle PDF and DOCX files via edge function
+  if (fileExtension === 'pdf' || fileExtension === 'docx') {
+    return await parseDocumentFile(file);
+  }
+
+  // Handle text-based files directly
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -15,23 +25,57 @@ export const parseTextFile = async (file: File): Promise<string> => {
       reject(new Error('Error reading file'));
     };
 
-    // Handle different file types
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-
     switch (fileExtension) {
       case 'txt':
       case 'md':
-        reader.readAsText(file);
-        break;
       case 'csv':
-        reader.readAsText(file);
-        break;
       case 'json':
         reader.readAsText(file);
         break;
       default:
         reject(new Error(`Unsupported file type: ${fileExtension}`));
     }
+  });
+};
+
+const parseDocumentFile = async (file: File): Promise<string> => {
+  try {
+    // Convert file to base64
+    const base64 = await fileToBase64(file);
+    
+    // Call edge function to parse document
+    const { data, error } = await supabase.functions.invoke('parse-document', {
+      body: { 
+        fileData: base64,
+        fileName: file.name,
+        fileType: file.type
+      }
+    });
+
+    if (error) throw error;
+    
+    if (!data || !data.content) {
+      throw new Error('Failed to extract content from document');
+    }
+
+    return data.content;
+  } catch (error) {
+    console.error('Error parsing document:', error);
+    throw new Error(`Failed to parse document: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      // Remove data URL prefix
+      const base64Data = base64.split(',')[1];
+      resolve(base64Data);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 };
 
