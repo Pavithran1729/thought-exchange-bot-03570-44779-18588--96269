@@ -63,11 +63,11 @@ Deno.serve(async (req) => {
 
 async function parsePDF(data: Uint8Array, fileName: string): Promise<string> {
   try {
-    // Use pdfjs-dist for PDF parsing in Deno
-    const pdfjsLib = await import('https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs');
+    // Use pdfjs-serverless for serverless environments (no worker needed)
+    const { getDocument } = await import('https://esm.sh/pdfjs-serverless@0.3.2');
     
-    // Load the PDF document
-    const loadingTask = pdfjsLib.getDocument({ data });
+    console.log(`Loading PDF: ${fileName}`);
+    const loadingTask = getDocument(data);
     const pdf = await loadingTask.promise;
     
     console.log(`PDF loaded: ${pdf.numPages} pages`);
@@ -107,6 +107,8 @@ async function parseDOCX(data: Uint8Array, fileName: string): Promise<string> {
     const arrayBuffer = new ArrayBuffer(data.byteLength);
     const view = new Uint8Array(arrayBuffer);
     view.set(data);
+    
+    console.log(`Parsing DOCX: ${fileName}`);
     
     // Parse DOCX
     const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer as ArrayBuffer });
