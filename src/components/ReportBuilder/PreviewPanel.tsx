@@ -13,7 +13,9 @@ import { ExtractedDataChips } from "./ExtractedDataChips";
 import { StatisticsPanel } from "./StatisticsPanel";
 import { HighlightableContent } from "./HighlightableContent";
 import { TemplateSelector } from "./TemplateSelector";
-import { Eye, Code, Download, BarChart3, Highlighter, Monitor, Smartphone, Tablet } from "lucide-react";
+import { Eye, Code, Download, BarChart3, Highlighter, Monitor, Smartphone, Tablet, Edit, Save } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { processTextWithPositions } from "@/utils/regexProcessor";
 import { getTemplate } from "@/utils/templates";
 import type { ExtractedData } from "@/utils/regexProcessor";
@@ -24,6 +26,8 @@ interface PreviewPanelProps {
   extractedData: ExtractedData[];
   onExportClick: () => void;
   selectedTemplateId?: string;
+  onContentChange?: (content: string) => void;
+  onTitleChange?: (title: string) => void;
 }
 
 export const PreviewPanel = ({ 
@@ -31,14 +35,26 @@ export const PreviewPanel = ({
   content, 
   extractedData, 
   onExportClick,
-  selectedTemplateId = "default"
+  selectedTemplateId = "default",
+  onContentChange,
+  onTitleChange
 }: PreviewPanelProps) => {
   const hasContent = title || content;
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isHighlightMode, setIsHighlightMode] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(selectedTemplateId);
   const [viewMode, setViewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editableContent, setEditableContent] = useState(content);
+  const [editableTitle, setEditableTitle] = useState(title);
+  
+  useEffect(() => {
+    setEditableContent(content);
+  }, [content]);
+  
+  useEffect(() => {
+    setEditableTitle(title);
+  }, [title]);
   
   // Update selected template when prop changes
   useEffect(() => {
@@ -77,31 +93,60 @@ export const PreviewPanel = ({
           
           {hasContent && (
             <div className="flex flex-wrap items-center gap-2">
-              <TemplateSelector 
-                selectedTemplate={selectedTemplate}
-                onTemplateChange={setSelectedTemplate}
-              />
-              
               <Button
-                variant={isHighlightMode ? "default" : "outline"}
+                variant={isEditMode ? "default" : "outline"}
                 size="sm"
-                onClick={() => setIsHighlightMode(!isHighlightMode)}
-                className="gap-2"
-                disabled={extractedData.length === 0}
-              >
-                <Highlighter className="h-4 w-4" />
-                <span className="hidden sm:inline">Highlight</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsStatsOpen(true)}
+                onClick={() => {
+                  if (isEditMode) {
+                    onContentChange?.(editableContent);
+                    onTitleChange?.(editableTitle);
+                  }
+                  setIsEditMode(!isEditMode);
+                }}
                 className="gap-2"
               >
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Stats</span>
+                {isEditMode ? (
+                  <>
+                    <Save className="h-4 w-4" />
+                    <span className="hidden sm:inline">Save</span>
+                  </>
+                ) : (
+                  <>
+                    <Edit className="h-4 w-4" />
+                    <span className="hidden sm:inline">Edit</span>
+                  </>
+                )}
               </Button>
+              
+              {!isEditMode && (
+                <>
+                  <TemplateSelector 
+                    selectedTemplate={selectedTemplate}
+                    onTemplateChange={setSelectedTemplate}
+                  />
+                  
+                  <Button
+                    variant={isHighlightMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsHighlightMode(!isHighlightMode)}
+                    className="gap-2"
+                    disabled={extractedData.length === 0}
+                  >
+                    <Highlighter className="h-4 w-4" />
+                    <span className="hidden sm:inline">Highlight</span>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsStatsOpen(true)}
+                    className="gap-2"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Stats</span>
+                  </Button>
+                </>
+              )}
               
               <div className="flex items-center gap-1 ml-auto">
                 <Button
@@ -147,6 +192,29 @@ export const PreviewPanel = ({
                 <p className="text-sm text-muted-foreground max-w-sm">
                   Enter a title and click "Generate Report" to see your content here in real-time
                 </p>
+              </div>
+            </div>
+          </div>
+        ) : isEditMode ? (
+          <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-background rounded-lg">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Title</label>
+                <Input
+                  value={editableTitle}
+                  onChange={(e) => setEditableTitle(e.target.value)}
+                  className="text-2xl font-bold h-auto py-3"
+                  placeholder="Report title..."
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Content (Markdown)</label>
+                <Textarea
+                  value={editableContent}
+                  onChange={(e) => setEditableContent(e.target.value)}
+                  className="min-h-[600px] font-mono text-sm"
+                  placeholder="Write your content in markdown format..."
+                />
               </div>
             </div>
           </div>
