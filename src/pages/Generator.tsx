@@ -198,6 +198,16 @@ const Generator = () => {
                 extractedData={reportData.extractedData}
                 onExportClick={() => setIsExportDialogOpen(true)}
                 selectedTemplateId={reportData.templateId}
+                onContentChange={(newContent) => {
+                  setReportData((prev) => ({ ...prev, content: newContent }));
+                  toast({
+                    title: "Content updated",
+                    description: "Your changes have been saved to the preview",
+                  });
+                }}
+                onTitleChange={(newTitle) => {
+                  setReportData((prev) => ({ ...prev, title: newTitle }));
+                }}
               />
             </div>
           </div>
