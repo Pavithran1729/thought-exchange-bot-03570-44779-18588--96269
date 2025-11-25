@@ -5,6 +5,7 @@ import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import MDEditor from "@uiw/react-md-editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -196,7 +197,7 @@ export const PreviewPanel = ({
             </div>
           </div>
         ) : isEditMode ? (
-          <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-background rounded-lg">
+          <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-background rounded-lg" data-color-mode="light">
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Title</label>
@@ -208,13 +209,19 @@ export const PreviewPanel = ({
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Content (Markdown)</label>
-                <Textarea
-                  value={editableContent}
-                  onChange={(e) => setEditableContent(e.target.value)}
-                  className="min-h-[600px] font-mono text-sm"
-                  placeholder="Write your content in markdown format..."
-                />
+                <label className="text-sm font-medium text-foreground">Content</label>
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <MDEditor
+                    value={editableContent}
+                    onChange={(val) => setEditableContent(val || "")}
+                    height={600}
+                    preview="live"
+                    hideToolbar={false}
+                    enableScroll={true}
+                    visibleDragbar={false}
+                    highlightEnable={true}
+                  />
+                </div>
               </div>
             </div>
           </div>
