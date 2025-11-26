@@ -20,61 +20,77 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY not configured');
     }
 
-    console.log('Generating report for title:', title);
+    console.log('Generating detailed report for title:', title);
 
-    const systemPrompt = `You are an expert report writer. Generate comprehensive, professionally formatted reports in markdown format that match academic and corporate standards.
+    const prompt = `You are an expert report writer with exceptional attention to detail. Generate a highly detailed, comprehensive, well-structured report based on the provided title and context.
 
-Structure your reports with:
-1. Clear hierarchy using markdown headers (# ## ### ####)
-2. Executive summary section
-3. Detailed findings with subsections
-4. Data-driven insights with tables and statistics
-5. Actionable recommendations
-6. Professional conclusion
+Requirements:
+- Use professional markdown formatting with clear hierarchy (# ## ### ####)
+- Include extensive sections with proper headings and detailed subsections
+- Add comprehensive tables for data presentation with multiple examples
+- Use LaTeX notation for mathematical formulas (wrap in $ for inline, $$ for block)
+- Include detailed bullet points and numbered lists with extensive explanations
+- Ensure the report is extremely detailed, informative, and well-organized
+- Provide in-depth analysis, multiple examples, case studies, and thorough explanations for each section
+- Use **bold** for emphasis and key terms
+- Use *italic* for definitions and foreign terms
 
-CRITICAL FORMATTING REQUIREMENTS:
-- Use **bold text** for emphasis and key terms (e.g., **Important:** or **Key Finding**)
-- Use *italic text* for definitions and foreign terms
-- Create tables using markdown table syntax for data presentation:
-  | Header 1 | Header 2 | Header 3 |
-  |----------|----------|----------|
-  | Data 1   | Data 2   | Data 3   |
-- Use numbered lists (1. 2. 3.) for sequential steps
-- Use bullet points (- or *) for non-sequential items
-- Include code blocks with \`\`\` for technical content
+Structure (with extensive detail in each section):
+1. **Executive Summary** (detailed overview with key findings)
+2. **Introduction** (comprehensive background and context)
+3. **Background/Literature Review** (extensive research context)
+4. **Main Content** (multiple detailed sections with subsections):
+   - Each section should be thorough with examples
+   - Include data tables, statistics, and analysis
+   - Provide comprehensive explanations
+5. **Detailed Analysis** (in-depth examination with multiple perspectives)
+6. **Case Studies/Examples** (multiple real-world applications)
+7. **Findings and Discussion** (thorough analysis of results)
+8. **Conclusions** (comprehensive summary of insights)
+9. **Detailed Recommendations** (actionable steps with implementation details)
+10. **Future Outlook** (trends and predictions)
 
-For mathematical formulas and equations, use LaTeX notation:
-- Inline math: $formula$ (e.g., $E = mc^2$ for energy-mass equivalence)
-- Display math: $$formula$$ (e.g., $$\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$)
-- Use proper LaTeX syntax for fractions $\\frac{a}{b}$, integrals $\\int$, summations $\\sum$, Greek letters $\\alpha, \\beta, \\gamma$
+Template Style: ${template}
+${template === 'technical' ? 'Focus on extensive technical details, specifications, code examples, diagrams, and comprehensive data-driven analysis with detailed explanations.' : ''}
+${template === 'business' ? 'Focus on detailed business metrics, comprehensive ROI analysis, market research, competitive analysis, financial projections, and strategic recommendations with extensive supporting data.' : ''}
+${template === 'academic' ? 'Focus on thorough research methodology, extensive citations, scholarly analysis, comprehensive literature review, detailed findings with supporting evidence, and rigorous academic standards.' : ''}
+${template === 'creative' ? 'Use engaging language and creative presentation while maintaining professionalism. Include detailed examples, case studies, comprehensive storytelling, and innovative perspectives.' : ''}
+${template === 'professional' ? 'Use formal corporate language, extensive data tables, detailed analysis, comprehensive recommendations, and professional formatting throughout.' : ''}
 
-STYLE GUIDELINES:
-- Use proper spacing between sections
-- Bold all subheadings (## **Introduction**)
-- Include tables for comparative data
-- Use horizontal rules (---) to separate major sections
-- Make the content ${template === 'professional' ? 'formal and corporate with data tables' : template === 'creative' ? 'engaging and innovative with visual elements' : template === 'academic' ? 'scholarly and research-focused with citations and formulas' : 'clear and informative with structured data'}.`;
+CRITICAL: Generate a COMPLETE, FULL-LENGTH report with:
+- Minimum 3000-4000 words of substantial content
+- At least 8-10 major sections with multiple subsections each
+- Detailed explanations for every point (not just bullet points)
+- Multiple comprehensive examples and case studies
+- Thorough analysis with extensive supporting data
+- Detailed recommendations with step-by-step implementation guidelines
+- Professional tables with substantial data
+- In-depth insights and comprehensive discussion
 
-    const userPrompt = `Generate a comprehensive report on: "${title}"${additionalContext ? `\n\nAdditional context: ${additionalContext}` : ''}`;
+Report Title: "${title}"${additionalContext ? `\n\nAdditional Context:\n${additionalContext}` : ''}
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+Generate the most comprehensive, detailed, and thorough report possible. Do not cut short - provide complete, extensive content for all sections.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        max_completion_tokens: 16000,
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          maxOutputTokens: 32000,
+          temperature: 0.7,
+        }
       }),
     });
 
@@ -85,19 +101,13 @@ STYLE GUIDELINES:
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits depleted. Please add more credits.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
       const errorText = await response.text();
-      console.error('AI Gateway error:', response.status, errorText);
+      console.error('Gemini API error:', response.status, errorText);
       throw new Error('Failed to generate report');
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!content) {
       throw new Error('No content generated');
