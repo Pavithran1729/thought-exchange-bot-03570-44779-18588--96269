@@ -20,42 +20,68 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY not configured');
     }
 
-    console.log('Extracting insights from content');
+    console.log('Extracting comprehensive insights from content');
 
-    const systemPrompt = `You are an expert data analyst. Extract key insights, statistics, and important information from the provided content.
-    
-Return the insights in JSON format with the following structure:
+    const prompt = `You are an expert data analyst with deep analytical capabilities and attention to detail. Thoroughly analyze the provided content and extract comprehensive, detailed insights, statistics, and summaries.
+
+Return a JSON object with the following structure:
 {
   "insights": [
     {
-      "type": "key_point" | "statistic" | "quote" | "finding",
-      "title": "brief title",
-      "content": "the insight content",
-      "importance": "high" | "medium" | "low"
+      "type": "key_point" | "statistic" | "quote" | "finding" | "trend" | "recommendation",
+      "title": "brief descriptive title",
+      "content": "detailed insight content with comprehensive explanation and context",
+      "importance": "high" | "medium" | "low",
+      "category": "relevant category",
+      "details": "additional supporting information and implications"
     }
   ],
-  "summary": "one paragraph executive summary",
-  "keywords": ["keyword1", "keyword2", ...]
-}`;
+  "summary": "comprehensive multi-paragraph executive summary covering all major points, themes, and key findings in detail",
+  "keywords": ["keyword1", "keyword2", "keyword3", ...],
+  "statistics": [
+    {
+      "label": "statistic name with context",
+      "value": "statistic value",
+      "significance": "explanation of what this statistic means"
+    }
+  ],
+  "trends": ["detailed trend 1 with analysis", "detailed trend 2 with implications", ...],
+  "recommendations": ["detailed actionable recommendation 1", "detailed recommendation 2", ...]
+}
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+Focus on:
+- Quantitative data and specific metrics with context
+- Important patterns, correlations, and relationships
+- Actionable insights with detailed explanations
+- Emerging trends and their comprehensive implications
+- Detailed recommendations with implementation guidance
+- Context and supporting evidence for each insight
+- Multiple perspectives and comprehensive analysis
+
+Extract AT LEAST 8-12 detailed insights covering different aspects of the content. Provide in-depth analysis with substantial detail for each field.
+
+Content to analyze:\n\n${content}`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Extract insights from this content:\n\n${content}` }
-        ],
-        max_completion_tokens: 1500,
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          maxOutputTokens: 16000,
+          temperature: 0.7,
+        }
       }),
     });
 
@@ -66,19 +92,13 @@ Return the insights in JSON format with the following structure:
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits depleted. Please add more credits.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
       const errorText = await response.text();
-      console.error('AI Gateway error:', response.status, errorText);
+      console.error('Gemini API error:', response.status, errorText);
       throw new Error('Failed to extract insights');
     }
 
     const data = await response.json();
-    const rawContent = data.choices?.[0]?.message?.content;
+    const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!rawContent) {
       throw new Error('No insights generated');
