@@ -20,14 +20,16 @@ serve(async (req) => {
       );
     }
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY not configured');
+    const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+    if (!PERPLEXITY_API_KEY) {
+      throw new Error('PERPLEXITY_API_KEY not configured');
     }
 
     console.log('Generating detailed report for title:', title);
 
-    const prompt = `You are an expert report writer with exceptional attention to detail. Generate a highly detailed, comprehensive, well-structured report based on the provided title and context.
+    const systemPrompt = `You are an expert report writer with exceptional attention to detail. Generate highly detailed, comprehensive, well-structured reports using professional markdown formatting.`;
+
+    const userPrompt = `Generate a highly detailed, comprehensive, well-structured report based on the provided title and context.
 
 Requirements:
 - Use professional markdown formatting with clear hierarchy (# ## ### ####)
@@ -76,21 +78,22 @@ Report Title: "${title}"${additionalContext ? `\n\nAdditional Context:\n${additi
 
 Generate the most comprehensive, detailed, and thorough report possible. Do not cut short - provide complete, extensive content for all sections.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          maxOutputTokens: 32000,
-          temperature: 0.7,
-        }
+        model: 'llama-3.1-sonar-large-128k-online',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000,
+        return_images: false,
+        return_related_questions: false,
       }),
     });
 
@@ -102,12 +105,12 @@ Generate the most comprehensive, detailed, and thorough report possible. Do not 
         );
       }
       const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
+      console.error('Perplexity API error:', response.status, errorText);
       throw new Error('Failed to generate report');
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
       throw new Error('No content generated');
