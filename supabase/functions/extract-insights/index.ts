@@ -20,14 +20,16 @@ serve(async (req) => {
       );
     }
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY not configured');
+    const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+    if (!PERPLEXITY_API_KEY) {
+      throw new Error('PERPLEXITY_API_KEY not configured');
     }
 
     console.log('Extracting comprehensive insights from content');
 
-    const prompt = `You are an expert data analyst with deep analytical capabilities and attention to detail. Thoroughly analyze the provided content and extract comprehensive, detailed insights, statistics, and summaries.
+    const systemPrompt = `You are an expert data analyst with deep analytical capabilities and attention to detail. Always respond with valid JSON only.`;
+
+    const userPrompt = `Thoroughly analyze the provided content and extract comprehensive, detailed insights, statistics, and summaries.
 
 Return a JSON object with the following structure:
 {
@@ -65,23 +67,26 @@ Focus on:
 
 Extract AT LEAST 8-12 detailed insights covering different aspects of the content. Provide in-depth analysis with substantial detail for each field.
 
-Content to analyze:\n\n${content}`;
+Content to analyze:
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+${content}`;
+
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          maxOutputTokens: 16000,
-          temperature: 0.7,
-        }
+        model: 'llama-3.1-sonar-large-128k-online',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000,
+        return_images: false,
+        return_related_questions: false,
       }),
     });
 
@@ -93,12 +98,12 @@ Content to analyze:\n\n${content}`;
         );
       }
       const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
+      console.error('Perplexity API error:', response.status, errorText);
       throw new Error('Failed to extract insights');
     }
 
     const data = await response.json();
-    const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const rawContent = data.choices?.[0]?.message?.content;
 
     if (!rawContent) {
       throw new Error('No insights generated');

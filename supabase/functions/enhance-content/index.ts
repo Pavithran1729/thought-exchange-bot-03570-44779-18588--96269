@@ -20,9 +20,9 @@ serve(async (req) => {
       );
     }
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY not configured');
+    const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+    if (!PERPLEXITY_API_KEY) {
+      throw new Error('PERPLEXITY_API_KEY not configured');
     }
 
     console.log('Enhancing content with extensive detail, type:', enhancementType);
@@ -34,7 +34,9 @@ serve(async (req) => {
       rephrase: 'Completely rephrase this content using different words, varied sentence structures, and alternative expressions while maintaining and even enhancing the meaning, depth, detail, and message. Make it more engaging, detailed, and professionally written.'
     };
 
-    const prompt = `You are an expert content editor with exceptional attention to detail and comprehensive writing skills. ${enhancementPrompts[enhancementType as keyof typeof enhancementPrompts]} 
+    const systemPrompt = `You are an expert content editor with exceptional attention to detail and comprehensive writing skills.`;
+
+    const userPrompt = `${enhancementPrompts[enhancementType as keyof typeof enhancementPrompts]} 
     
 Maintain a ${tone} tone throughout. Use proper markdown formatting with:
 - Clear headings and subheadings
@@ -47,23 +49,26 @@ Preserve any mathematical formulas in LaTeX notation (both inline $...$ and disp
 
 CRITICAL: Provide extensive, detailed, comprehensive content. Every point should be well-developed with thorough explanations, examples, and supporting information. Do not abbreviate or summarize unless specifically asked to summarize.
 
-Content to enhance:\n\n${content}`;
+Content to enhance:
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+${content}`;
+
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          maxOutputTokens: 32000,
-          temperature: 0.7,
-        }
+        model: 'llama-3.1-sonar-large-128k-online',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000,
+        return_images: false,
+        return_related_questions: false,
       }),
     });
 
@@ -75,12 +80,12 @@ Content to enhance:\n\n${content}`;
         );
       }
       const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
+      console.error('Perplexity API error:', response.status, errorText);
       throw new Error('Failed to enhance content');
     }
 
     const data = await response.json();
-    const enhancedContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const enhancedContent = data.choices?.[0]?.message?.content;
 
     if (!enhancedContent) {
       throw new Error('No enhanced content generated');
