@@ -12,7 +12,8 @@ import { TemplateSelector } from "./TemplateSelector";
 interface InputPanelProps {
   onGenerate: (data: {
     title: string;
-    content: string;
+    documentContent: string;
+    additionalInstructions: string;
     useRegex: boolean;
     useAI: boolean;
     templateId?: string;
@@ -31,7 +32,8 @@ export const InputPanel = ({
   initialTemplateId = "default"
 }: InputPanelProps) => {
   const [title, setTitle] = useState(initialTitle);
-  const [content, setContent] = useState(initialContent);
+  const [documentContent, setDocumentContent] = useState("");
+  const [additionalInstructions, setAdditionalInstructions] = useState(initialContent);
   const [useRegex, setUseRegex] = useState(true);
   const [useAI, setUseAI] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState(initialTemplateId);
@@ -39,12 +41,19 @@ export const InputPanel = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
-      onGenerate({ title, content, useRegex, useAI, templateId: selectedTemplate });
+      onGenerate({ 
+        title, 
+        documentContent, 
+        additionalInstructions, 
+        useRegex, 
+        useAI, 
+        templateId: selectedTemplate 
+      });
     }
   };
 
-  const characterCount = content.length;
-  const maxChars = 5000;
+  const characterCount = additionalInstructions.length;
+  const maxChars = 2000;
 
   return (
     <Card className="glass-morphism border-primary/20 h-full">
@@ -78,32 +87,47 @@ export const InputPanel = ({
             />
           </div>
 
-          {/* File Upload */}
+          {/* File Upload - Document Source */}
           <div className="space-y-2">
-            <Label>Upload Document (Optional)</Label>
-            <FileUploader onFileContent={setContent} />
+            <Label>Upload Document (Source Material)</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Documents will be sent directly to AI for analysis
+            </p>
+            <FileUploader onFileContent={setDocumentContent} />
+            {documentContent && (
+              <p className="text-xs text-primary">
+                ✓ {documentContent.length.toLocaleString()} characters loaded from document(s)
+              </p>
+            )}
           </div>
 
-          {/* Content Input */}
+          {/* Additional Instructions */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <Label htmlFor="content">Content (Optional)</Label>
+              <Label htmlFor="instructions">Additional Instructions (Optional)</Label>
               <span className="text-xs text-muted-foreground">
                 {characterCount} / {maxChars}
               </span>
             </div>
             <Textarea
-              id="content"
-              placeholder="Leave empty to let AI generate content, or paste/upload your existing content here..."
-              value={content}
-              onChange={(e) => setContent(e.target.value.slice(0, maxChars))}
-              className="bg-input border-border min-h-[200px] resize-none"
-              rows={10}
+              id="instructions"
+              placeholder="Specify what to focus on, extract, or analyze from the document...
+
+Examples:
+• Focus on financial data and projections
+• Extract all action items and deadlines
+• Summarize the key findings
+• Create an executive summary
+• Analyze the methodology section"
+              value={additionalInstructions}
+              onChange={(e) => setAdditionalInstructions(e.target.value.slice(0, maxChars))}
+              className="bg-input border-border min-h-[150px] resize-none"
+              rows={6}
             />
             <p className="text-xs text-muted-foreground">
-              {content.trim() 
-                ? "AI will enhance and structure your content" 
-                : "AI will generate a complete report from your title"}
+              {documentContent 
+                ? "Tell AI what to focus on or extract from your document" 
+                : "Without a document, AI will generate a report based on your title"}
             </p>
           </div>
 
@@ -127,7 +151,7 @@ export const InputPanel = ({
               <div className="space-y-0.5">
                 <Label htmlFor="ai">AI Content Generation</Label>
                 <p className="text-xs text-muted-foreground">
-                  Use GPT to generate/enhance content
+                  Use AI to analyze and generate content
                 </p>
               </div>
               <Switch
@@ -160,9 +184,9 @@ export const InputPanel = ({
           </div>
 
           {/* Info Note */}
-          {!content.trim() && (
+          {!documentContent && !additionalInstructions.trim() && (
             <div className="text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-3">
-              💡 <strong>Tip:</strong> Leave content empty to let AI generate a comprehensive report based solely on your title!
+              💡 <strong>Tip:</strong> Upload a document for AI to analyze, or leave empty to generate a report based solely on your title!
             </div>
           )}
         </form>

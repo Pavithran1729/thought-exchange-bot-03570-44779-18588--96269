@@ -46,47 +46,45 @@ const Generator = () => {
 
   const handleGenerate = async ({
     title,
-    content,
+    documentContent,
+    additionalInstructions,
     useRegex,
     useAI,
     templateId,
   }: {
     title: string;
-    content: string;
+    documentContent: string;
+    additionalInstructions: string;
     useRegex: boolean;
     useAI: boolean;
     templateId?: string;
   }) => {
     setIsGenerating(true);
     
-    let processedContent = content;
+    let processedContent = "";
     let extracted: ExtractedData[] = [];
-    let isAIGenerated = false;
 
     try {
-      // AI Generation or Enhancement
-      if (useAI && !content.trim()) {
-        // Generate new content from title
-        const generated = await generateReport(title, templateId || reportData.templateId);
+      if (useAI) {
+        // Generate report with document content and instructions sent to AI
+        const generated = await generateReport(
+          title, 
+          templateId || reportData.templateId,
+          documentContent,
+          additionalInstructions
+        );
         if (generated) {
           processedContent = generated;
-          isAIGenerated = true;
         } else {
           throw new Error("Failed to generate content");
         }
-      } else if (useAI && content.trim()) {
-        // Enhance existing content
-        const enhanced = await enhanceContent(content, 'improve');
-        if (enhanced) {
-          processedContent = enhanced;
-          isAIGenerated = true;
-        } else {
-          throw new Error("Failed to enhance content");
-        }
+      } else if (documentContent) {
+        // No AI - just use document content directly
+        processedContent = documentContent;
       }
 
       // Regex processing
-      if (useRegex) {
+      if (useRegex && processedContent) {
         processedContent = convertLatexToReadable(processedContent);
         extracted = processText(processedContent);
       }
@@ -185,7 +183,7 @@ const Generator = () => {
                 onGenerate={handleGenerate} 
                 isGenerating={isGenerating}
                 initialTitle={reportData.title}
-                initialContent={reportData.content}
+                initialContent=""
                 initialTemplateId={reportData.templateId}
               />
             </div>

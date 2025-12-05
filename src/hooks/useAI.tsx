@@ -9,13 +9,14 @@ export const useAI = () => {
   const generateReport = async (
     title: string,
     template: string = 'professional',
-    additionalContext: string = ''
+    documentContent: string = '',
+    additionalInstructions: string = ''
   ): Promise<string | null> => {
     try {
       setLoading(true);
 
       const { data, error } = await supabase.functions.invoke('generate-report', {
-        body: { title, template, additionalContext },
+        body: { title, template, documentContent, additionalInstructions },
       });
 
       if (error) {
