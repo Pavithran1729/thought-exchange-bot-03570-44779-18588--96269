@@ -267,8 +267,36 @@ export const exportToAcademicDOCX = async (
     );
   }
 
-  // === TABLE OF CONTENTS (Placeholder) ===
+  // === TABLE OF CONTENTS ===
   if (structure.includeToc) {
+    // First, collect all headings from content to build TOC
+    const sections = parseMarkdownToSections(content);
+    const tocEntries: { title: string; level: number; sectionNum: string }[] = [];
+    let tempSectionNum = 0;
+    let tempSubsectionNum = 0;
+
+    sections.forEach((section) => {
+      if (section.type === 'heading') {
+        const cleanTitle = stripExistingNumbering(section.content);
+        if (section.level === 1) {
+          tempSectionNum++;
+          tempSubsectionNum = 0;
+          tocEntries.push({
+            title: cleanTitle.toUpperCase(),
+            level: 1,
+            sectionNum: `${tempSectionNum}.`
+          });
+        } else if (section.level === 2) {
+          tempSubsectionNum++;
+          tocEntries.push({
+            title: cleanTitle,
+            level: 2,
+            sectionNum: `${tempSectionNum}.${tempSubsectionNum}`
+          });
+        }
+      }
+    });
+
     documentChildren.push(
       new Paragraph({
         children: [
@@ -284,21 +312,54 @@ export const exportToAcademicDOCX = async (
       })
     );
 
-    documentChildren.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: '[Table of Contents - Update field after opening in Word]',
-            size: 22,
-            font: 'Times New Roman',
-            italics: true,
-            color: '666666',
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 200 },
-      })
-    );
+    // Render actual TOC entries
+    const charsPerPage = 2500;
+    let estimatedPage = structure.includeCoverPage ? 3 : 2; // After cover and TOC pages
+    
+    tocEntries.forEach((entry, index) => {
+      // Calculate estimated page number
+      const sectionIndex = sections.findIndex(s => 
+        s.type === 'heading' && 
+        (stripExistingNumbering(s.content).toUpperCase() === entry.title ||
+        stripExistingNumbering(s.content) === entry.title)
+      );
+      
+      let sectionCharCount = 0;
+      for (let i = 0; i < sectionIndex; i++) {
+        sectionCharCount += sections[i].content?.length || 0;
+      }
+      const pageNum = estimatedPage + Math.floor(sectionCharCount / charsPerPage);
+
+      const tocText = `${entry.sectionNum} ${entry.title}`;
+      const dots = '.'.repeat(Math.max(1, 60 - tocText.length - String(pageNum).length));
+      
+      documentChildren.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: tocText,
+              bold: entry.level === 1,
+              size: entry.level === 1 ? 24 : 22,
+              font: 'Times New Roman',
+            }),
+            new TextRun({
+              text: ` ${dots} `,
+              size: 22,
+              font: 'Times New Roman',
+            }),
+            new TextRun({
+              text: String(pageNum),
+              size: 22,
+              font: 'Times New Roman',
+            }),
+          ],
+          indent: {
+            left: entry.level === 1 ? 0 : convertInchesToTwip(0.3),
+          },
+          spacing: { after: 100 },
+        })
+      );
+    });
 
     documentChildren.push(
       new Paragraph({

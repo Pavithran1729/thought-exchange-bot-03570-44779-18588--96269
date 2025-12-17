@@ -203,16 +203,91 @@ export const exportToAcademicPDF = async (
 
   // === TABLE OF CONTENTS ===
   if (structure.includeToc) {
+    // First, collect all headings from content to build TOC
+    const sections = parseMarkdownToSections(content);
+    const tocEntries: { title: string; level: number; sectionNum: string }[] = [];
+    let tempSectionNum = 0;
+    let tempSubsectionNum = 0;
+
+    sections.forEach((section) => {
+      if (section.type === 'heading') {
+        const cleanTitle = stripExistingNumbering(section.content);
+        if (section.level === 1) {
+          tempSectionNum++;
+          tempSubsectionNum = 0;
+          tocEntries.push({
+            title: cleanTitle.toUpperCase(),
+            level: 1,
+            sectionNum: `${tempSectionNum}.`
+          });
+        } else if (section.level === 2) {
+          tempSubsectionNum++;
+          tocEntries.push({
+            title: cleanTitle,
+            level: 2,
+            sectionNum: `${tempSectionNum}.${tempSubsectionNum}`
+          });
+        }
+      }
+    });
+
     pdf.setFontSize(16);
     pdf.setFont('times', 'bold');
     pdf.text('TABLE OF CONTENTS', pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 15;
 
+    // Render actual TOC entries
     pdf.setFontSize(11);
-    pdf.setFont('times', 'italic');
-    pdf.setTextColor(100, 100, 100);
-    pdf.text('[Table of Contents - Generate from document outline]', margin, yPosition);
-    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('times', 'normal');
+    
+    const tocStartPage = currentPage + 1; // Content starts after TOC
+    let estimatedPage = tocStartPage;
+    const charsPerPage = 2500;
+    let charCount = 0;
+
+    tocEntries.forEach((entry, index) => {
+      checkPageBreak(8);
+      
+      // Estimate page number based on content position
+      const sectionIndex = sections.findIndex(s => 
+        s.type === 'heading' && 
+        stripExistingNumbering(s.content).toUpperCase() === entry.title ||
+        stripExistingNumbering(s.content) === entry.title
+      );
+      
+      // Calculate char count up to this section
+      let sectionCharCount = 0;
+      for (let i = 0; i < sectionIndex; i++) {
+        sectionCharCount += sections[i].content?.length || 0;
+      }
+      estimatedPage = tocStartPage + Math.floor(sectionCharCount / charsPerPage);
+
+      const indent = entry.level === 1 ? 0 : 10;
+      const tocText = `${entry.sectionNum} ${entry.title}`;
+      const pageNumText = `${estimatedPage}`;
+      
+      // Draw entry text
+      pdf.setFont('times', entry.level === 1 ? 'bold' : 'normal');
+      pdf.text(tocText, margin + indent, yPosition);
+      
+      // Draw page number right-aligned
+      pdf.setFont('times', 'normal');
+      pdf.text(pageNumText, pageWidth - margin, yPosition, { align: 'right' });
+      
+      // Draw dotted line between title and page number
+      const textWidth = pdf.getTextWidth(tocText);
+      const pageNumWidth = pdf.getTextWidth(pageNumText);
+      const dotsStart = margin + indent + textWidth + 5;
+      const dotsEnd = pageWidth - margin - pageNumWidth - 5;
+      
+      let dotX = dotsStart;
+      while (dotX < dotsEnd) {
+        pdf.text('.', dotX, yPosition);
+        dotX += 3;
+      }
+      
+      yPosition += 7;
+    });
     
     pdf.addPage();
     currentPage++;
