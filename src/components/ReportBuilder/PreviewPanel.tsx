@@ -6,6 +6,8 @@ import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { RichTextEditor } from "./RichTextEditor";
+import { PageView } from "./PageView";
+import { DocumentOutline } from "./DocumentOutline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,7 +16,7 @@ import { ExtractedDataChips } from "./ExtractedDataChips";
 import { StatisticsPanel } from "./StatisticsPanel";
 import { HighlightableContent } from "./HighlightableContent";
 import { TemplateSelector } from "./TemplateSelector";
-import { Eye, Code, Download, BarChart3, Highlighter, Monitor, Smartphone, Tablet, Edit, Save } from "lucide-react";
+import { Eye, Code, Download, BarChart3, Highlighter, Monitor, Smartphone, Tablet, Edit, Save, FileText, ScrollText, PanelLeftClose, PanelLeft } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { processTextWithPositions } from "@/utils/regexProcessor";
@@ -45,6 +47,8 @@ export const PreviewPanel = ({
   const [isHighlightMode, setIsHighlightMode] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(selectedTemplateId);
   const [viewMode, setViewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [previewType, setPreviewType] = useState<'scroll' | 'page'>('scroll');
+  const [showOutline, setShowOutline] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editableContent, setEditableContent] = useState(content);
   const [editableTitle, setEditableTitle] = useState(title);
@@ -150,6 +154,40 @@ export const PreviewPanel = ({
               )}
               
               <div className="flex items-center gap-1 ml-auto">
+                {/* Preview type toggle */}
+                <div className="flex items-center gap-1 mr-2 border-r border-border pr-2">
+                  <Button
+                    variant={previewType === 'scroll' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPreviewType('scroll')}
+                    className="px-2 gap-1"
+                    title="Scroll View"
+                  >
+                    <ScrollText className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={previewType === 'page' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPreviewType('page')}
+                    className="px-2 gap-1"
+                    title="Page View (MS Word style)"
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Outline toggle */}
+                <Button
+                  variant={showOutline ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowOutline(!showOutline)}
+                  className="px-2"
+                  title="Document Outline"
+                >
+                  {showOutline ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+                </Button>
+
+                {/* Responsive view modes */}
                 <Button
                   variant={viewMode === 'desktop' ? 'default' : 'outline'}
                   size="sm"
@@ -217,10 +255,34 @@ export const PreviewPanel = ({
               </div>
             </div>
           </div>
+        ) : previewType === 'page' ? (
+          <div className="flex h-full">
+            {/* Document Outline Sidebar */}
+            {showOutline && (
+              <DocumentOutline 
+                content={content} 
+                className="w-64 shrink-0"
+              />
+            )}
+            
+            {/* Page View */}
+            <div className={`flex-1 transition-all duration-300 ${viewModeWidths[viewMode]}`}>
+              <PageView title={title} content={content} className="h-full" />
+            </div>
+          </div>
         ) : (
-          <div className={`transition-all duration-300 ${viewModeWidths[viewMode]}`}>
-            <Tabs defaultValue="formatted" className="flex-1 flex flex-col">
-              <TabsList className="w-full justify-start bg-muted/50">
+          <div className="flex h-full">
+            {/* Document Outline Sidebar */}
+            {showOutline && (
+              <DocumentOutline 
+                content={content} 
+                className="w-64 shrink-0"
+              />
+            )}
+            
+            <div className={`flex-1 transition-all duration-300 ${viewModeWidths[viewMode]}`}>
+              <Tabs defaultValue="formatted" className="flex-1 flex flex-col">
+                <TabsList className="w-full justify-start bg-muted/50">
                 <TabsTrigger value="formatted" className="flex items-center gap-2">
                   <Eye className="h-4 w-4" />
                   Formatted
@@ -370,7 +432,8 @@ export const PreviewPanel = ({
                   {content || "No content generated yet..."}
                 </pre>
               </TabsContent>
-            </Tabs>
+              </Tabs>
+            </div>
           </div>
         )}
       </CardContent>
