@@ -7,18 +7,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Sparkles, GraduationCap } from "lucide-react";
+import { FileText, Download, Sparkles, GraduationCap, Code } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportToPDF } from "@/utils/exportPDF";
 import { exportToDOCX } from "@/utils/exportDOCX";
 import { exportToAcademicPDF } from "@/utils/academicExportPDF";
 import { exportToAcademicDOCX } from "@/utils/academicExportDOCX";
+import { exportToLaTeX } from "@/utils/exportLaTeX";
 import { getTemplate } from "@/utils/templates";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ExtractedData } from "@/utils/regexProcessor";
 import type { AcademicReportConfig } from "@/types/academicReport";
 import { DEFAULT_ACADEMIC_CONFIG } from "@/types/academicReport";
-
 interface ExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -66,6 +66,8 @@ export const ExportDialog = ({
           await exportToAcademicPDF(title, content, config, extractedData);
         } else if (format === 'docx') {
           await exportToAcademicDOCX(title, content, config, extractedData);
+        } else if (format === 'tex') {
+          await exportToLaTeX(title, content, config, extractedData);
         }
       } else {
         if (format === 'pdf') {
@@ -103,6 +105,7 @@ export const ExportDialog = ({
         const config = academicConfig || DEFAULT_ACADEMIC_CONFIG;
         await exportToAcademicPDF(title, content, config, extractedData);
         await exportToAcademicDOCX(title, content, config, extractedData);
+        await exportToLaTeX(title, content, config, extractedData);
       } else {
         await exportToPDF(title, content, template, extractedData);
         await exportToDOCX(title, content, template, extractedData);
@@ -110,7 +113,9 @@ export const ExportDialog = ({
       
       toast({
         title: "Export Complete",
-        description: "PDF and DOCX files have been downloaded",
+        description: exportMode === 'academic' 
+          ? "PDF, DOCX, and LaTeX files have been downloaded"
+          : "PDF and DOCX files have been downloaded",
       });
     } catch (error) {
       toast({
@@ -123,20 +128,42 @@ export const ExportDialog = ({
     }
   };
 
-  const exportFormats = [
+  const exportFormats = exportMode === 'academic' ? [
     { 
       format: "pdf", 
       label: "PDF Document", 
       icon: FileText, 
       color: "text-red-400",
-      description: exportMode === 'academic' ? "Academic PDF with cover page & formatting" : "Professional PDF with formatting"
+      description: "Academic PDF with cover page & formatting"
     },
     { 
       format: "docx", 
       label: "Word Document", 
       icon: FileText, 
       color: "text-blue-400",
-      description: exportMode === 'academic' ? "Academic DOCX with proper sections" : "Editable Word document"
+      description: "Academic DOCX with proper sections"
+    },
+    { 
+      format: "tex", 
+      label: "LaTeX Document", 
+      icon: Code, 
+      color: "text-green-400",
+      description: "Source .tex file for advanced publishing"
+    },
+  ] : [
+    { 
+      format: "pdf", 
+      label: "PDF Document", 
+      icon: FileText, 
+      color: "text-red-400",
+      description: "Professional PDF with formatting"
+    },
+    { 
+      format: "docx", 
+      label: "Word Document", 
+      icon: FileText, 
+      color: "text-blue-400",
+      description: "Editable Word document"
     },
   ];
 
@@ -172,10 +199,11 @@ export const ExportDialog = ({
                 <p className="font-medium text-primary mb-1">Academic Export Features:</p>
                 <ul className="space-y-1">
                   <li>• Professional cover page with institution details</li>
-                  <li>• Table of contents placeholder</li>
+                  <li>• Table of contents with page numbers</li>
                   <li>• Numbered sections (1., 1.1, 1.2...)</li>
                   <li>• Times New Roman, 1.5 line spacing</li>
                   <li>• Headers, footers & page numbers</li>
+                  <li>• LaTeX export with math equation support</li>
                   <li>• References section placeholder</li>
                 </ul>
               </div>
