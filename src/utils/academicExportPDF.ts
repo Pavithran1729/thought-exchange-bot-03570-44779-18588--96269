@@ -37,7 +37,79 @@ export const exportToAcademicPDF = async (
     return false;
   };
 
-  // Helper to process text style
+  // Helper to strip existing section numbering from headings
+  const stripExistingNumbering = (text: string): string => {
+    // Remove patterns like "1. ", "1.1 ", "2.1.3 ", "SECTION 1:", etc.
+    return text
+      .replace(/^[\d.]+\s*/, '')
+      .replace(/^SECTION\s*\d+[:.]\s*/i, '')
+      .replace(/^CHAPTER\s*\d+[:.]\s*/i, '')
+      .trim();
+  };
+
+  // Helper to render text with bold/italic formatting
+  const renderFormattedText = (text: string, x: number, y: number, maxWidth: number): number => {
+    const segments: { text: string; bold: boolean; italic: boolean }[] = [];
+    let remaining = text;
+    
+    // Parse bold and italic markers
+    while (remaining.length > 0) {
+      const boldMatch = remaining.match(/\*\*(.*?)\*\*/);
+      const italicMatch = remaining.match(/\*(.*?)\*/);
+      
+      if (boldMatch && (!italicMatch || boldMatch.index! <= italicMatch.index!)) {
+        if (boldMatch.index! > 0) {
+          segments.push({ text: remaining.slice(0, boldMatch.index!), bold: false, italic: false });
+        }
+        segments.push({ text: boldMatch[1], bold: true, italic: false });
+        remaining = remaining.slice(boldMatch.index! + boldMatch[0].length);
+      } else if (italicMatch) {
+        if (italicMatch.index! > 0) {
+          segments.push({ text: remaining.slice(0, italicMatch.index!), bold: false, italic: false });
+        }
+        segments.push({ text: italicMatch[1], bold: false, italic: true });
+        remaining = remaining.slice(italicMatch.index! + italicMatch[0].length);
+      } else {
+        segments.push({ text: remaining, bold: false, italic: false });
+        break;
+      }
+    }
+    
+    // Render segments
+    let currentX = x;
+    let currentY = y;
+    const lineHeight = 6;
+    
+    segments.forEach(segment => {
+      if (segment.bold) {
+        pdf.setFont('times', 'bold');
+      } else if (segment.italic) {
+        pdf.setFont('times', 'italic');
+      } else {
+        pdf.setFont('times', 'normal');
+      }
+      
+      const words = segment.text.split(' ');
+      words.forEach((word, idx) => {
+        const wordWithSpace = idx < words.length - 1 ? word + ' ' : word;
+        const wordWidth = pdf.getTextWidth(wordWithSpace);
+        
+        if (currentX + wordWidth > x + maxWidth && currentX > x) {
+          currentY += lineHeight;
+          currentX = x;
+          checkPageBreak(lineHeight);
+        }
+        
+        pdf.text(wordWithSpace, currentX, currentY);
+        currentX += wordWidth;
+      });
+    });
+    
+    pdf.setFont('times', 'normal');
+    return currentY + lineHeight;
+  };
+
+  // Simple text style stripper for non-formatted output
   const processTextStyle = (text: string) => {
     return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
   };
@@ -163,7 +235,8 @@ export const exportToAcademicPDF = async (
           yPosition += 10;
           pdf.setFontSize(14);
           pdf.setFont('times', 'bold');
-          const headingText = `${sectionNumber}. ${section.content.toUpperCase()}`;
+          const cleanH1 = stripExistingNumbering(section.content);
+          const headingText = `${sectionNumber}. ${cleanH1.toUpperCase()}`;
           const h1Lines = pdf.splitTextToSize(headingText, contentWidth);
           pdf.text(h1Lines, margin, yPosition);
           yPosition += h1Lines.length * 7 + 8;
@@ -174,7 +247,8 @@ export const exportToAcademicPDF = async (
           yPosition += 6;
           pdf.setFontSize(12);
           pdf.setFont('times', 'bold');
-          const h2Text = `${sectionNumber}.${subsectionNumber} ${section.content}`;
+          const cleanH2 = stripExistingNumbering(section.content);
+          const h2Text = `${sectionNumber}.${subsectionNumber} ${cleanH2}`;
           const h2Lines = pdf.splitTextToSize(h2Text, contentWidth);
           pdf.text(h2Lines, margin, yPosition);
           yPosition += h2Lines.length * 6 + 6;
@@ -183,7 +257,8 @@ export const exportToAcademicPDF = async (
           yPosition += 4;
           pdf.setFontSize(11);
           pdf.setFont('times', 'bold');
-          const cleanHeading = processTextStyle(section.content);
+          const cleanH3 = stripExistingNumbering(section.content);
+          const cleanHeading = processTextStyle(cleanH3);
           const h3Lines = pdf.splitTextToSize(cleanHeading, contentWidth);
           pdf.text(h3Lines, margin, yPosition);
           yPosition += h3Lines.length * 5 + 5;
@@ -192,20 +267,23 @@ export const exportToAcademicPDF = async (
 
       case 'paragraph':
         pdf.setFontSize(11);
-        pdf.setFont('times', 'normal');
-        const cleanPara = processTextStyle(section.content);
-        if (cleanPara.trim()) {
-          // Add first line indent
-          const paraLines = pdf.splitTextToSize(cleanPara, contentWidth - 10);
-          if (paraLines.length > 0) {
-            // First line with indent
-            pdf.text(paraLines[0], margin + 10, yPosition);
-            yPosition += 6;
-            // Rest of lines
-            for (let i = 1; i < paraLines.length; i++) {
-              checkPageBreak(6);
-              pdf.text(paraLines[i], margin, yPosition);
+        if (section.content.trim()) {
+          // Check if content has bold/italic markers
+          if (section.content.includes('**') || section.content.includes('*')) {
+            yPosition = renderFormattedText(section.content, margin + 10, yPosition, contentWidth - 10);
+          } else {
+            pdf.setFont('times', 'normal');
+            const paraLines = pdf.splitTextToSize(section.content, contentWidth - 10);
+            if (paraLines.length > 0) {
+              // First line with indent
+              pdf.text(paraLines[0], margin + 10, yPosition);
               yPosition += 6;
+              // Rest of lines
+              for (let i = 1; i < paraLines.length; i++) {
+                checkPageBreak(6);
+                pdf.text(paraLines[i], margin, yPosition);
+                yPosition += 6;
+              }
             }
           }
           yPosition += 3;

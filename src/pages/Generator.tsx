@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { BackgroundEffects } from "@/components/BackgroundEffects";
 import { InputPanel } from "@/components/ReportBuilder/InputPanel";
 import { PreviewPanel } from "@/components/ReportBuilder/PreviewPanel";
 import { ExportDialog } from "@/components/ReportBuilder/ExportDialog";
+import { GenerationProgress, type GenerationStage } from "@/components/ReportBuilder/GenerationProgress";
 import { processText, convertLatexToReadable, type ExtractedData } from "@/utils/regexProcessor";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, LogOut, Save, FolderOpen } from "lucide-react";
@@ -24,8 +25,10 @@ const Generator = () => {
   });
   const [academicConfig, setAcademicConfig] = useState<AcademicReportConfig>(DEFAULT_ACADEMIC_CONFIG);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStage, setGenerationStage] = useState<GenerationStage>('idle');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [currentReportId, setCurrentReportId] = useState<string | null>(null);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   
   const { signOut } = useAuth();
   const { generateReport } = useAI();
@@ -46,6 +49,19 @@ const Generator = () => {
     }
   }, [location.state]);
 
+  const handleCancelGeneration = useCallback(() => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+    setIsGenerating(false);
+    setGenerationStage('idle');
+    toast({
+      title: "Generation cancelled",
+      description: "Report generation was cancelled",
+    });
+  }, [abortController, toast]);
+
   const handleGenerate = async ({
     title,
     documentContent,
@@ -64,6 +80,11 @@ const Generator = () => {
     academicConfig?: AcademicReportConfig;
   }) => {
     setIsGenerating(true);
+    setGenerationStage('preparing');
+    
+    // Create new abort controller for this generation
+    const controller = new AbortController();
+    setAbortController(controller);
     
     // Store the academic config for export
     if (inputAcademicConfig) {
@@ -75,6 +96,9 @@ const Generator = () => {
 
     try {
       if (useAI) {
+        // Update stage to generating
+        setGenerationStage('generating');
+        
         // Generate report with document content, instructions, and academic config sent to AI
         const generated = await generateReport(
           title, 
@@ -83,6 +107,11 @@ const Generator = () => {
           additionalInstructions,
           inputAcademicConfig
         );
+        
+        if (controller.signal.aborted) {
+          return;
+        }
+        
         if (generated) {
           processedContent = generated;
         } else {
@@ -92,6 +121,9 @@ const Generator = () => {
         // No AI - just use document content directly
         processedContent = documentContent;
       }
+
+      // Update stage to processing
+      setGenerationStage('processing');
 
       // Regex processing
       if (useRegex && processedContent) {
@@ -106,19 +138,33 @@ const Generator = () => {
         templateId: templateId || reportData.templateId,
       });
       
+      setGenerationStage('complete');
+      
+      // Auto-hide progress after completion
+      setTimeout(() => {
+        setGenerationStage('idle');
+      }, 1500);
+      
       toast({
         title: "Report generated!",
         description: "Your academic report has been generated successfully.",
       });
     } catch (error) {
+      if (controller.signal.aborted) {
+        return;
+      }
       console.error('Error generating report:', error);
+      setGenerationStage('idle');
       toast({
         title: "Generation failed",
         description: error instanceof Error ? error.message : "Failed to generate report",
         variant: "destructive",
       });
     } finally {
-      setIsGenerating(false);
+      if (!controller.signal.aborted) {
+        setIsGenerating(false);
+      }
+      setAbortController(null);
     }
   };
 
@@ -220,6 +266,12 @@ const Generator = () => {
             </div>
           </div>
         </div>
+
+        {/* Generation Progress Overlay */}
+        <GenerationProgress 
+          stage={generationStage} 
+          onCancel={handleCancelGeneration} 
+        />
 
         {/* Export Dialog */}
         <ExportDialog

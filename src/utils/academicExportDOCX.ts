@@ -43,6 +43,16 @@ export const exportToAcademicDOCX = async (
   let sectionNumber = 0;
   let subsectionNumber = 0;
 
+  // Helper to strip existing section numbering from headings
+  const stripExistingNumbering = (text: string): string => {
+    // Remove patterns like "1. ", "1.1 ", "2.1.3 ", "SECTION 1:", etc.
+    return text
+      .replace(/^[\d.]+\s*/, '')
+      .replace(/^SECTION\s*\d+[:.]\s*/i, '')
+      .replace(/^CHAPTER\s*\d+[:.]\s*/i, '')
+      .trim();
+  };
+
   // Helper to parse text with bold/italic
   const parseTextRuns = (text: string): TextRun[] => {
     const runs: TextRun[] = [];
@@ -307,11 +317,12 @@ export const exportToAcademicDOCX = async (
           sectionNumber++;
           subsectionNumber = 0;
           
+          const cleanH1 = stripExistingNumbering(section.content);
           documentChildren.push(
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `${sectionNumber}. ${section.content.toUpperCase()}`,
+                  text: `${sectionNumber}. ${cleanH1.toUpperCase()}`,
                   bold: true,
                   size: FONT_SIZES.h1,
                   font: 'Times New Roman',
@@ -324,11 +335,12 @@ export const exportToAcademicDOCX = async (
         } else if (section.level === 2) {
           subsectionNumber++;
           
+          const cleanH2 = stripExistingNumbering(section.content);
           documentChildren.push(
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `${sectionNumber}.${subsectionNumber} ${section.content}`,
+                  text: `${sectionNumber}.${subsectionNumber} ${cleanH2}`,
                   bold: true,
                   size: FONT_SIZES.h2,
                   font: 'Times New Roman',
@@ -339,9 +351,10 @@ export const exportToAcademicDOCX = async (
             })
           );
         } else {
+          const cleanH3 = stripExistingNumbering(section.content);
           documentChildren.push(
             new Paragraph({
-              children: parseTextRuns(section.content),
+              children: parseTextRuns(cleanH3),
               heading: HeadingLevel.HEADING_3,
               spacing: { before: 200, after: 100 },
             })
