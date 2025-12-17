@@ -7,12 +7,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Sparkles } from "lucide-react";
+import { FileText, Download, Sparkles, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportToPDF } from "@/utils/exportPDF";
 import { exportToDOCX } from "@/utils/exportDOCX";
+import { exportToAcademicPDF } from "@/utils/academicExportPDF";
+import { exportToAcademicDOCX } from "@/utils/academicExportDOCX";
 import { getTemplate } from "@/utils/templates";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ExtractedData } from "@/utils/regexProcessor";
+import type { AcademicReportConfig } from "@/types/academicReport";
+import { DEFAULT_ACADEMIC_CONFIG } from "@/types/academicReport";
 
 interface ExportDialogProps {
   open: boolean;
@@ -21,6 +26,7 @@ interface ExportDialogProps {
   content: string;
   extractedData?: ExtractedData[];
   selectedTemplate?: string;
+  academicConfig?: AcademicReportConfig;
 }
 
 export const ExportDialog = ({ 
@@ -29,10 +35,12 @@ export const ExportDialog = ({
   title, 
   content,
   extractedData = [],
-  selectedTemplate = 'default'
+  selectedTemplate = 'default',
+  academicConfig
 }: ExportDialogProps) => {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const [exportMode, setExportMode] = useState<'standard' | 'academic'>('academic');
   const template = getTemplate(selectedTemplate);
 
   const handleExport = async (format: string) => {
@@ -48,29 +56,31 @@ export const ExportDialog = ({
     setIsExporting(true);
     toast({
       title: "Export Started",
-      description: `Preparing ${format.toUpperCase()} export...`,
+      description: `Preparing ${exportMode === 'academic' ? 'Academic ' : ''}${format.toUpperCase()} export...`,
     });
 
     try {
-      if (format === 'pdf') {
-        await exportToPDF(title, content, template, extractedData);
-      } else if (format === 'docx') {
-        await exportToDOCX(title, content, template, extractedData);
-      } else if (format === 'pptx') {
-        // PPTX export - coming soon
-        toast({
-          title: "Coming Soon",
-          description: "PowerPoint export will be available soon",
-        });
-        setIsExporting(false);
-        return;
+      if (exportMode === 'academic') {
+        const config = academicConfig || DEFAULT_ACADEMIC_CONFIG;
+        if (format === 'pdf') {
+          await exportToAcademicPDF(title, content, config, extractedData);
+        } else if (format === 'docx') {
+          await exportToAcademicDOCX(title, content, config, extractedData);
+        }
+      } else {
+        if (format === 'pdf') {
+          await exportToPDF(title, content, template, extractedData);
+        } else if (format === 'docx') {
+          await exportToDOCX(title, content, template, extractedData);
+        }
       }
 
       toast({
         title: "Export Complete",
-        description: `${title}.${format} has been downloaded`,
+        description: `${title}${exportMode === 'academic' ? '_Academic' : ''}.${format} has been downloaded`,
       });
     } catch (error) {
+      console.error('Export error:', error);
       toast({
         title: "Export Failed",
         description: error instanceof Error ? error.message : "Failed to export document",
@@ -89,8 +99,14 @@ export const ExportDialog = ({
     });
 
     try {
-      await exportToPDF(title, content, template, extractedData);
-      await exportToDOCX(title, content, template, extractedData);
+      if (exportMode === 'academic') {
+        const config = academicConfig || DEFAULT_ACADEMIC_CONFIG;
+        await exportToAcademicPDF(title, content, config, extractedData);
+        await exportToAcademicDOCX(title, content, config, extractedData);
+      } else {
+        await exportToPDF(title, content, template, extractedData);
+        await exportToDOCX(title, content, template, extractedData);
+      }
       
       toast({
         title: "Export Complete",
@@ -113,38 +129,71 @@ export const ExportDialog = ({
       label: "PDF Document", 
       icon: FileText, 
       color: "text-red-400",
-      description: "Professional PDF with formatting"
+      description: exportMode === 'academic' ? "Academic PDF with cover page & formatting" : "Professional PDF with formatting"
     },
     { 
       format: "docx", 
       label: "Word Document", 
       icon: FileText, 
       color: "text-blue-400",
-      description: "Editable Word document"
-    },
-    { 
-      format: "pptx", 
-      label: "PowerPoint", 
-      icon: FileText, 
-      color: "text-orange-400",
-      description: "Presentation slides"
+      description: exportMode === 'academic' ? "Academic DOCX with proper sections" : "Editable Word document"
     },
   ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] glass-morphism border-primary/30">
+      <DialogContent className="sm:max-w-[520px] glass-morphism border-primary/30">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Download className="h-6 w-6 text-primary" />
             Export Your Report
           </DialogTitle>
           <DialogDescription>
-            Choose your preferred format or download all at once
+            Choose export mode and format for your document
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 pt-4">
+        <div className="space-y-5 pt-4">
+          {/* Export Mode Tabs */}
+          <Tabs value={exportMode} onValueChange={(v) => setExportMode(v as 'standard' | 'academic')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="academic" className="gap-2">
+                <GraduationCap className="h-4 w-4" />
+                Academic Format
+              </TabsTrigger>
+              <TabsTrigger value="standard" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Standard Format
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="academic" className="mt-4">
+              <div className="text-xs text-muted-foreground bg-primary/10 border border-primary/20 rounded-lg p-3 mb-4">
+                <p className="font-medium text-primary mb-1">Academic Export Features:</p>
+                <ul className="space-y-1">
+                  <li>• Professional cover page with institution details</li>
+                  <li>• Table of contents placeholder</li>
+                  <li>• Numbered sections (1., 1.1, 1.2...)</li>
+                  <li>• Times New Roman, 1.5 line spacing</li>
+                  <li>• Headers, footers & page numbers</li>
+                  <li>• References section placeholder</li>
+                </ul>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="standard" className="mt-4">
+              <div className="text-xs text-muted-foreground bg-muted/50 border border-border rounded-lg p-3 mb-4">
+                <p className="font-medium mb-1">Standard Export Features:</p>
+                <ul className="space-y-1">
+                  <li>• Clean professional formatting</li>
+                  <li>• Template-based styling</li>
+                  <li>• Tables and lists preserved</li>
+                  <li>• Page numbers included</li>
+                </ul>
+              </div>
+            </TabsContent>
+          </Tabs>
+
           {/* Export Formats */}
           <div className="space-y-3">
             {exportFormats.map(({ format, label, icon: Icon, color, description }) => (
@@ -185,31 +234,8 @@ export const ExportDialog = ({
             disabled={isExporting}
           >
             <Sparkles className="mr-2 h-5 w-5 group-hover:animate-pulse" />
-            Download All Formats
+            {isExporting ? 'Exporting...' : 'Download All Formats'}
           </Button>
-
-          {/* Features Info */}
-          <div className="bg-muted/30 border border-border/50 rounded-lg p-4 space-y-2">
-            <p className="text-sm font-medium text-foreground">Export Features:</p>
-            <ul className="text-xs text-muted-foreground space-y-1.5">
-              <li className="flex items-center gap-2">
-                <div className="h-1 w-1 rounded-full bg-primary" />
-                Professional formatting & styling
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="h-1 w-1 rounded-full bg-primary" />
-                Automatic table of contents
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="h-1 w-1 rounded-full bg-primary" />
-                Headers, footers & page numbers
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="h-1 w-1 rounded-full bg-primary" />
-                Embedded images & charts
-              </li>
-            </ul>
-          </div>
         </div>
       </DialogContent>
     </Dialog>

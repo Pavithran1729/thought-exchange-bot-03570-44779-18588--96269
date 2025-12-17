@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAI } from "@/hooks/useAI";
 import { useReports } from "@/hooks/useReports";
 import { useToast } from "@/hooks/use-toast";
+import { DEFAULT_ACADEMIC_CONFIG, type AcademicReportConfig } from "@/types/academicReport";
 
 const Generator = () => {
   const location = useLocation();
@@ -19,14 +20,15 @@ const Generator = () => {
     title: "",
     content: "",
     extractedData: [] as ExtractedData[],
-    templateId: "default",
+    templateId: "academic",
   });
+  const [academicConfig, setAcademicConfig] = useState<AcademicReportConfig>(DEFAULT_ACADEMIC_CONFIG);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [currentReportId, setCurrentReportId] = useState<string | null>(null);
   
   const { signOut } = useAuth();
-  const { generateReport, enhanceContent } = useAI();
+  const { generateReport } = useAI();
   const { saveReport } = useReports();
   const { toast } = useToast();
 
@@ -38,7 +40,7 @@ const Generator = () => {
         title: report.title,
         content: report.content,
         extractedData: report.extracted_data || [],
-        templateId: report.template_id || "default",
+        templateId: report.template_id || "academic",
       });
       setCurrentReportId(report.id);
     }
@@ -51,6 +53,7 @@ const Generator = () => {
     useRegex,
     useAI,
     templateId,
+    academicConfig: inputAcademicConfig,
   }: {
     title: string;
     documentContent: string;
@@ -58,20 +61,27 @@ const Generator = () => {
     useRegex: boolean;
     useAI: boolean;
     templateId?: string;
+    academicConfig?: AcademicReportConfig;
   }) => {
     setIsGenerating(true);
+    
+    // Store the academic config for export
+    if (inputAcademicConfig) {
+      setAcademicConfig(inputAcademicConfig);
+    }
     
     let processedContent = "";
     let extracted: ExtractedData[] = [];
 
     try {
       if (useAI) {
-        // Generate report with document content and instructions sent to AI
+        // Generate report with document content, instructions, and academic config sent to AI
         const generated = await generateReport(
           title, 
           templateId || reportData.templateId,
           documentContent,
-          additionalInstructions
+          additionalInstructions,
+          inputAcademicConfig
         );
         if (generated) {
           processedContent = generated;
@@ -98,7 +108,7 @@ const Generator = () => {
       
       toast({
         title: "Report generated!",
-        description: "Your report has been generated successfully.",
+        description: "Your academic report has been generated successfully.",
       });
     } catch (error) {
       console.error('Error generating report:', error);
@@ -152,7 +162,7 @@ const Generator = () => {
               </Button>
               <div className="h-6 w-px bg-border" />
               <h1 className="text-xl font-bold">
-                {reportData.title || "AI Report Generator"}
+                {reportData.title || "Academic Report Generator"}
               </h1>
             </div>
             <div className="flex items-center gap-2">
@@ -176,7 +186,7 @@ const Generator = () => {
 
         {/* Main Content - 2 Panel Layout */}
         <div className="flex-1 overflow-hidden">
-          <div className="h-full grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-4 p-4">
+          <div className="h-full grid grid-cols-1 lg:grid-cols-[450px_1fr] gap-4 p-4">
             {/* Left Panel - Input */}
             <div className="overflow-y-auto">
               <InputPanel 
@@ -218,6 +228,8 @@ const Generator = () => {
           title={reportData.title}
           content={reportData.content}
           extractedData={reportData.extractedData}
+          selectedTemplate={reportData.templateId}
+          academicConfig={academicConfig}
         />
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
+import type { AcademicReportConfig } from '@/types/academicReport';
 
 export const useAI = () => {
   const [loading, setLoading] = useState(false);
@@ -10,13 +11,21 @@ export const useAI = () => {
     title: string,
     template: string = 'professional',
     documentContent: string = '',
-    additionalInstructions: string = ''
+    additionalInstructions: string = '',
+    academicConfig?: AcademicReportConfig
   ): Promise<string | null> => {
     try {
       setLoading(true);
 
       const { data, error } = await supabase.functions.invoke('generate-report', {
-        body: { title, template, documentContent, additionalInstructions },
+        body: { 
+          title, 
+          template, 
+          documentContent, 
+          additionalInstructions,
+          reportType: academicConfig?.reportType || 'project-report',
+          academicDetails: academicConfig?.academicDetails || null
+        },
       });
 
       if (error) {
