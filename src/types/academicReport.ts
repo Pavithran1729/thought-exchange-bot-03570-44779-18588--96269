@@ -6,7 +6,7 @@ export type ReportType =
   | 'case-study'
   | 'literature-review';
 
-export type CitationStyle = 'apa' | 'ieee' | 'harvard' | 'mla' | 'chicago';
+export type CitationStyle = 'none' | 'apa' | 'ieee' | 'harvard' | 'mla' | 'chicago';
 
 export interface AcademicDetails {
   authorName: string;
@@ -42,6 +42,7 @@ export const REPORT_TYPES: { value: ReportType; label: string; description: stri
 ];
 
 export const CITATION_STYLES: { value: CitationStyle; label: string }[] = [
+  { value: 'none', label: 'None (No Citations)' },
   { value: 'apa', label: 'APA (7th Edition)' },
   { value: 'ieee', label: 'IEEE' },
   { value: 'harvard', label: 'Harvard' },

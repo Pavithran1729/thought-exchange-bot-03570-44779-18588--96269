@@ -68,6 +68,60 @@ export const regexPatterns: RegexPattern[] = [
   },
 ];
 
+// Academic-specific regex patterns for highlighting
+export const academicPatterns: RegexPattern[] = [
+  {
+    type: "Citation",
+    pattern: /\[(\d+(?:,\s*\d+)*)\]/g,
+    description: "Numeric citations [1], [2,3]",
+  },
+  {
+    type: "Citation",
+    pattern: /\(([A-Z][a-z]+(?:\s+(?:et\s+al\.?|&|and)\s+[A-Z][a-z]+)*,?\s*\d{4}[a-z]?)\)/g,
+    description: "Author-year citations (Smith, 2023)",
+  },
+  {
+    type: "Figure Reference",
+    pattern: /\b(Figure|Fig\.?)\s+\d+(\.\d+)?[a-z]?\b/gi,
+    description: "Figure references",
+  },
+  {
+    type: "Table Reference",
+    pattern: /\bTable\s+\d+(\.\d+)?\b/gi,
+    description: "Table references",
+  },
+  {
+    type: "Equation Reference",
+    pattern: /\b(Equation|Eq\.?)\s+\d+(\.\d+)?\b/gi,
+    description: "Equation references",
+  },
+  {
+    type: "Section Reference",
+    pattern: /\bSection\s+\d+(\.\d+)*\b/gi,
+    description: "Section references",
+  },
+  {
+    type: "Key Term",
+    pattern: /\*\*([^*]+)\*\*/g,
+    description: "Bold key terms",
+  },
+  {
+    type: "Definition",
+    pattern: /\*([^*]+)\*/g,
+    description: "Italic definitions",
+  },
+  {
+    type: "DOI",
+    pattern: /\b10\.\d{4,}\/[^\s]+/g,
+    description: "DOI identifiers",
+  },
+  {
+    type: "ISBN",
+    pattern: /\bISBN[:\s]*([\d-]{10,17})\b/gi,
+    description: "ISBN numbers",
+  },
+];
+
 export const processText = (text: string): ExtractedData[] => {
   const results: ExtractedData[] = [];
   const seen = new Set<string>();
@@ -92,11 +146,12 @@ export const processText = (text: string): ExtractedData[] => {
   return results;
 };
 
-export const processTextWithPositions = (text: string): ExtractedDataWithPosition[] => {
+export const processTextWithPositions = (text: string, includeAcademic: boolean = false): ExtractedDataWithPosition[] => {
   const results: ExtractedDataWithPosition[] = [];
   const seen = new Set<string>();
+  const patterns = includeAcademic ? [...regexPatterns, ...academicPatterns] : regexPatterns;
 
-  regexPatterns.forEach(({ type, pattern, description }) => {
+  patterns.forEach(({ type, pattern, description }) => {
     // Reset regex index for each pattern
     const regex = new RegExp(pattern.source, pattern.flags);
     let match;
@@ -117,6 +172,10 @@ export const processTextWithPositions = (text: string): ExtractedDataWithPositio
   });
 
   return results;
+};
+
+export const processAcademicText = (text: string): ExtractedDataWithPosition[] => {
+  return processTextWithPositions(text, true);
 };
 
 export const convertLatexToReadable = (text: string): string => {

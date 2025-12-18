@@ -535,7 +535,7 @@ export const exportToAcademicDOCX = async (
   });
 
   // === REFERENCES SECTION ===
-  if (structure.includeReferences) {
+  if (structure.includeReferences && structure.citationStyle !== 'none') {
     documentChildren.push(
       new Paragraph({
         children: [new PageBreak()],
