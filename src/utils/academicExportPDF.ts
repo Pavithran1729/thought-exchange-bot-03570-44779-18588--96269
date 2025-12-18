@@ -435,7 +435,7 @@ export const exportToAcademicPDF = async (
   });
 
   // === REFERENCES SECTION ===
-  if (structure.includeReferences) {
+  if (structure.includeReferences && structure.citationStyle !== 'none') {
     pdf.addPage();
     currentPage++;
     yPosition = margin;

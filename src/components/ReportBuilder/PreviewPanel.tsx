@@ -19,7 +19,7 @@ import { TemplateSelector } from "./TemplateSelector";
 import { Eye, Code, Download, BarChart3, Highlighter, Monitor, Smartphone, Tablet, Edit, Save, FileText, ScrollText, PanelLeftClose, PanelLeft } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { processTextWithPositions } from "@/utils/regexProcessor";
+import { processTextWithPositions, processAcademicText } from "@/utils/regexProcessor";
 import { getTemplate } from "@/utils/templates";
 import type { ExtractedData } from "@/utils/regexProcessor";
 
@@ -67,7 +67,7 @@ export const PreviewPanel = ({
   }, [selectedTemplateId]);
   
   const template = getTemplate(selectedTemplate);
-  const extractedDataWithPositions = processTextWithPositions(content);
+  const extractedDataWithPositions = processAcademicText(content);
   
   const viewModeWidths = {
     desktop: 'w-full',
@@ -135,7 +135,6 @@ export const PreviewPanel = ({
                     size="sm"
                     onClick={() => setIsHighlightMode(!isHighlightMode)}
                     className="gap-2"
-                    disabled={extractedData.length === 0}
                   >
                     <Highlighter className="h-4 w-4" />
                     <span className="hidden sm:inline">Highlight</span>

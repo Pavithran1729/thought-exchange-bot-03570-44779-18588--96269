@@ -14,6 +14,142 @@ export type Database = {
   }
   public: {
     Tables: {
+      citations: {
+        Row: {
+          authors: string[] | null
+          bibtex_raw: string | null
+          citation_key: string | null
+          created_at: string | null
+          doi: string | null
+          id: string
+          journal: string | null
+          pages: string | null
+          report_id: string | null
+          title: string
+          url: string | null
+          user_id: string
+          volume: string | null
+          year: number | null
+        }
+        Insert: {
+          authors?: string[] | null
+          bibtex_raw?: string | null
+          citation_key?: string | null
+          created_at?: string | null
+          doi?: string | null
+          id?: string
+          journal?: string | null
+          pages?: string | null
+          report_id?: string | null
+          title: string
+          url?: string | null
+          user_id: string
+          volume?: string | null
+          year?: number | null
+        }
+        Update: {
+          authors?: string[] | null
+          bibtex_raw?: string | null
+          citation_key?: string | null
+          created_at?: string | null
+          doi?: string | null
+          id?: string
+          journal?: string | null
+          pages?: string | null
+          report_id?: string | null
+          title?: string
+          url?: string | null
+          user_id?: string
+          volume?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "citations_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_templates: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          styles: Json
+          university_name: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+          styles: Json
+          university_name?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          styles?: Json
+          university_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      figures: {
+        Row: {
+          alt_text: string | null
+          caption: string | null
+          created_at: string | null
+          figure_number: number | null
+          id: string
+          image_url: string | null
+          report_id: string | null
+          user_id: string
+        }
+        Insert: {
+          alt_text?: string | null
+          caption?: string | null
+          created_at?: string | null
+          figure_number?: number | null
+          id?: string
+          image_url?: string | null
+          report_id?: string | null
+          user_id: string
+        }
+        Update: {
+          alt_text?: string | null
+          caption?: string | null
+          created_at?: string | null
+          figure_number?: number | null
+          id?: string
+          image_url?: string | null
+          report_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figures_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       file_uploads: {
         Row: {
           created_at: string
@@ -81,6 +217,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      report_tables: {
+        Row: {
+          caption: string | null
+          content: Json | null
+          created_at: string | null
+          id: string
+          report_id: string | null
+          table_number: number | null
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          content?: Json | null
+          created_at?: string | null
+          id?: string
+          report_id?: string | null
+          table_number?: number | null
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          content?: Json | null
+          created_at?: string | null
+          id?: string
+          report_id?: string | null
+          table_number?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_tables_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       report_versions: {
         Row: {
