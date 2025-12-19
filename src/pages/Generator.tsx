@@ -4,9 +4,16 @@ import { InputPanel } from "@/components/ReportBuilder/InputPanel";
 import { PreviewPanel } from "@/components/ReportBuilder/PreviewPanel";
 import { ExportDialog } from "@/components/ReportBuilder/ExportDialog";
 import { GenerationProgress, type GenerationStage } from "@/components/ReportBuilder/GenerationProgress";
+import { CitationManager } from "@/components/ReportBuilder/CitationManager";
+import { FigureManager } from "@/components/ReportBuilder/FigureManager";
+import { TableEditor } from "@/components/ReportBuilder/TableEditor";
+import { OriginalityPanel } from "@/components/ReportBuilder/OriginalityPanel";
+import { TemplateLibrary } from "@/components/ReportBuilder/TemplateLibrary";
 import { processText, convertLatexToReadable, type ExtractedData } from "@/utils/regexProcessor";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogOut, Save, FolderOpen } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArrowLeft, LogOut, Save, FolderOpen, Wrench } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAI } from "@/hooks/useAI";
@@ -29,6 +36,7 @@ const Generator = () => {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [currentReportId, setCurrentReportId] = useState<string | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
   
   const { signOut } = useAuth();
   const { generateReport } = useAI();
@@ -212,6 +220,58 @@ const Generator = () => {
               </h1>
             </div>
             <div className="flex items-center gap-2">
+              <Sheet open={isToolsOpen} onOpenChange={setIsToolsOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Wrench className="h-4 w-4 mr-2" />
+                    Tools
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[400px] sm:w-[500px]">
+                  <SheetHeader>
+                    <SheetTitle>Report Tools</SheetTitle>
+                  </SheetHeader>
+                  <ScrollArea className="h-[calc(100vh-80px)] mt-4 pr-4">
+                    <div className="space-y-4">
+                      <CitationManager 
+                        reportId={currentReportId || undefined}
+                        citationStyle={academicConfig.structure.citationStyle}
+                        onInsertCitation={(citation) => {
+                          setReportData(prev => ({
+                            ...prev,
+                            content: prev.content + ' ' + citation
+                          }));
+                        }}
+                      />
+                      <FigureManager 
+                        reportId={currentReportId || undefined}
+                        onInsertReference={(ref) => {
+                          setReportData(prev => ({
+                            ...prev,
+                            content: prev.content + ' ' + ref
+                          }));
+                        }}
+                      />
+                      <TableEditor 
+                        reportId={currentReportId || undefined}
+                        onInsertTable={(tableMarkdown) => {
+                          setReportData(prev => ({
+                            ...prev,
+                            content: prev.content + '\n\n' + tableMarkdown
+                          }));
+                        }}
+                      />
+                      <OriginalityPanel content={reportData.content} />
+                      <TemplateLibrary 
+                        selectedTemplate={reportData.templateId}
+                        onTemplateSelect={(templateId) => {
+                          setReportData(prev => ({ ...prev, templateId }));
+                        }}
+                      />
+                    </div>
+                  </ScrollArea>
+                </SheetContent>
+              </Sheet>
               <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
                 <FolderOpen className="h-4 w-4 mr-2" />
                 My Reports

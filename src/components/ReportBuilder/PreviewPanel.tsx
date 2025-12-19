@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -8,6 +8,7 @@ import "katex/dist/katex.min.css";
 import { RichTextEditor } from "./RichTextEditor";
 import { PageView } from "./PageView";
 import { DocumentOutline } from "./DocumentOutline";
+import { SectionContextMenu } from "./SectionContextMenu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,13 @@ export const PreviewPanel = ({
   const [editableContent, setEditableContent] = useState(content);
   const [editableTitle, setEditableTitle] = useState(title);
   
+  // Context menu state for text selection enhancement
+  const [contextMenu, setContextMenu] = useState<{
+    show: boolean;
+    position: { x: number; y: number };
+    selectedText: string;
+  }>({ show: false, position: { x: 0, y: 0 }, selectedText: '' });
+  
   useEffect(() => {
     setEditableContent(content);
   }, [content]);
@@ -65,6 +73,35 @@ export const PreviewPanel = ({
   useEffect(() => {
     setSelectedTemplate(selectedTemplateId);
   }, [selectedTemplateId]);
+
+  // Handle text selection for context menu
+  const handleTextSelection = useCallback((e: React.MouseEvent) => {
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim() || '';
+    
+    if (selectedText && selectedText.length > 10) {
+      setContextMenu({
+        show: true,
+        position: { x: e.clientX, y: e.clientY },
+        selectedText,
+      });
+    }
+  }, []);
+
+  const handleContextMenuClose = useCallback(() => {
+    setContextMenu(prev => ({ ...prev, show: false }));
+  }, []);
+
+  const handleEnhancedContent = useCallback((enhancedContent: string) => {
+    // Replace selected text with enhanced content
+    const selection = window.getSelection();
+    if (selection && contextMenu.selectedText) {
+      const newContent = editableContent.replace(contextMenu.selectedText, enhancedContent);
+      setEditableContent(newContent);
+      onContentChange?.(newContent);
+    }
+    handleContextMenuClose();
+  }, [contextMenu.selectedText, editableContent, onContentChange, handleContextMenuClose]);
   
   const template = getTemplate(selectedTemplate);
   const extractedDataWithPositions = processAcademicText(content);
@@ -298,7 +335,7 @@ export const PreviewPanel = ({
                 )}
               </TabsList>
 
-              <TabsContent value="formatted" className="flex-1 overflow-y-auto mt-4 space-y-4">
+              <TabsContent value="formatted" className="flex-1 overflow-y-auto mt-4 space-y-4" onMouseUp={handleTextSelection}>
                 <motion.div
                   key={selectedTemplate}
                   initial={{ opacity: 0, y: 10 }}
@@ -444,6 +481,16 @@ export const PreviewPanel = ({
         isOpen={isStatsOpen}
         onClose={() => setIsStatsOpen(false)}
       />
+      
+      {/* Context Menu for Section Enhancement */}
+      {contextMenu.show && (
+        <SectionContextMenu
+          selectedText={contextMenu.selectedText}
+          position={contextMenu.position}
+          onClose={handleContextMenuClose}
+          onEnhancedContent={handleEnhancedContent}
+        />
+      )}
     </Card>
   );
 };
