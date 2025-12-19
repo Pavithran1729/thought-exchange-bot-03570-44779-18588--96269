@@ -20,23 +20,27 @@ serve(async (req) => {
       );
     }
 
-    const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
-    if (!PERPLEXITY_API_KEY) {
-      throw new Error('PERPLEXITY_API_KEY not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    console.log('Enhancing content with extensive detail, type:', enhancementType);
+    console.log('Enhancing content with type:', enhancementType);
 
-    const enhancementPrompts = {
+    const enhancementPrompts: Record<string, string> = {
       expand: 'Significantly expand this content with extensive details, multiple examples, comprehensive explanations, and in-depth analysis. Add substantial context, supporting information, data points, case studies, and detailed elaborations for each point. Transform every point into a well-developed paragraph with thorough explanations. Make it at least 3-4x longer with rich, valuable, detailed content.',
       summarize: 'Create a detailed yet concise summary of this content while preserving all key points, important information, and critical insights. Include main arguments, supporting details, and essential context in a well-structured format.',
       improve: 'Thoroughly improve the clarity, structure, flow, and professionalism of this content. Enhance explanations with more detail, add transitional phrases, fix any grammar or style issues, improve formatting with proper sections, and make the content significantly more comprehensive, detailed, and engaging.',
-      rephrase: 'Completely rephrase this content using different words, varied sentence structures, and alternative expressions while maintaining and even enhancing the meaning, depth, detail, and message. Make it more engaging, detailed, and professionally written.'
+      rephrase: 'Completely rephrase this content using different words, varied sentence structures, and alternative expressions while maintaining and even enhancing the meaning, depth, detail, and message. Make it more engaging, detailed, and professionally written.',
+      'add-citations': 'Add relevant academic citations and references to support the claims in this content. Insert citation markers like [1], [2], etc. at appropriate places and provide a references section at the end. Use realistic-looking academic sources (journal articles, conference papers, books) that would logically support the content. Format references in academic style.',
+      'academic-tone': 'Rewrite this content in a formal academic tone. Use third-person perspective, passive voice where appropriate, precise terminology, and scholarly language. Remove any casual expressions, contractions, or informal phrases. Add hedging language (e.g., "suggests", "indicates", "may") where claims are made. Ensure the writing style is suitable for an academic journal or thesis.',
+      'add-examples': 'Enhance this content by adding concrete, real-world examples, case studies, and supporting data. For each main point, provide specific illustrations from industry, research, or practice. Include statistics, research findings, and practical applications where relevant. Make the content more tangible and evidence-based.',
+      'simplify': 'Simplify this content to make it more accessible while retaining the key information. Break down complex concepts, use clearer language, add explanations for technical terms, and improve readability. Target a general academic audience rather than specialists.',
     };
 
-    const systemPrompt = `You are an expert content editor with exceptional attention to detail and comprehensive writing skills.`;
+    const systemPrompt = `You are an expert academic content editor with exceptional attention to detail and comprehensive writing skills. You specialize in transforming content for academic and professional contexts.`;
 
-    const userPrompt = `${enhancementPrompts[enhancementType as keyof typeof enhancementPrompts]} 
+    const userPrompt = `${enhancementPrompts[enhancementType] || enhancementPrompts.expand} 
     
 Maintain a ${tone} tone throughout. Use proper markdown formatting with:
 - Clear headings and subheadings
@@ -53,22 +57,18 @@ Content to enhance:
 
 ${content}`;
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.7,
-        max_tokens: 4000,
-        return_images: false,
-        return_related_questions: false,
       }),
     });
 
@@ -79,8 +79,14 @@ ${content}`;
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'Payment required. Please add funds to continue.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       const errorText = await response.text();
-      console.error('Perplexity API error:', response.status, errorText);
+      console.error('AI gateway error:', response.status, errorText);
       throw new Error('Failed to enhance content');
     }
 
