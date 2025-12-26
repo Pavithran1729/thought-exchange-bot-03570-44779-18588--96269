@@ -83,13 +83,13 @@ export const FigureManager = ({ reportId, onInsertReference }: FigureManagerProp
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('report-files')
+        .from('figures')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('report-files')
+        .from('figures')
         .getPublicUrl(fileName);
 
       setNewFigure(prev => ({ ...prev, image_url: publicUrl }));

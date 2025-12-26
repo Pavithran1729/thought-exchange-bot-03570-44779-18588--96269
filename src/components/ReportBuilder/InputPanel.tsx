@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,9 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { Sparkles, ChevronDown, ChevronUp, GraduationCap } from "lucide-react";
 import { FileUploader } from "./FileUploader";
 import { TemplateSelector } from "./TemplateSelector";
+import { AcademicProfileSelector } from "./AcademicProfileSelector";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAcademicProfiles } from "@/hooks/useAcademicProfiles";
 import { 
   REPORT_TYPES, 
   CITATION_STYLES, 
@@ -53,6 +55,26 @@ export const InputPanel = ({
   
   // Academic configuration
   const [academicConfig, setAcademicConfig] = useState<AcademicReportConfig>(DEFAULT_ACADEMIC_CONFIG);
+  
+  // Load default profile on mount
+  const { defaultProfile } = useAcademicProfiles();
+  
+  useEffect(() => {
+    if (defaultProfile) {
+      setAcademicConfig(prev => ({
+        ...prev,
+        academicDetails: {
+          ...prev.academicDetails,
+          authorName: defaultProfile.author_name || "",
+          studentId: defaultProfile.student_id || "",
+          institution: defaultProfile.institution || "",
+          department: defaultProfile.department || "",
+          course: defaultProfile.course || "",
+          supervisorName: defaultProfile.supervisor_name || "",
+        }
+      }));
+    }
+  }, [defaultProfile]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,29 +111,46 @@ export const InputPanel = ({
     }));
   };
 
+  const handleProfileLoad = (profile: {
+    authorName: string;
+    studentId: string;
+    institution: string;
+    department: string;
+    course: string;
+    supervisorName: string;
+  }) => {
+    setAcademicConfig(prev => ({
+      ...prev,
+      academicDetails: {
+        ...prev.academicDetails,
+        ...profile,
+      }
+    }));
+  };
+
   const characterCount = additionalInstructions.length;
   const maxChars = 2000;
 
   return (
-    <Card className="glass-morphism border-primary/20 h-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className="premium-card h-full">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <GraduationCap className="h-5 w-5 text-primary" />
           Academic Report Generator
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-5">
+      <CardContent className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Report Type */}
           <div className="space-y-2">
-            <Label>Report Type</Label>
+            <Label className="text-sm font-medium">Report Type</Label>
             <Select
               value={academicConfig.reportType}
               onValueChange={(value: ReportType) => 
                 setAcademicConfig(prev => ({ ...prev, reportType: value }))
               }
             >
-              <SelectTrigger className="bg-input border-border">
+              <SelectTrigger className="bg-background border-border">
                 <SelectValue placeholder="Select report type" />
               </SelectTrigger>
               <SelectContent>
@@ -129,13 +168,13 @@ export const InputPanel = ({
 
           {/* Title Input */}
           <div className="space-y-2">
-            <Label htmlFor="title">Report Title *</Label>
+            <Label htmlFor="title" className="text-sm font-medium">Report Title *</Label>
             <Input
               id="title"
               placeholder="e.g., Study on Machine Learning Applications in Healthcare"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-input border-border"
+              className="bg-background border-border"
               required
             />
           </div>
@@ -143,7 +182,7 @@ export const InputPanel = ({
           {/* Academic Details Collapsible */}
           <Collapsible open={isAcademicOpen} onOpenChange={setIsAcademicOpen}>
             <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between" type="button">
+              <Button variant="outline" className="w-full justify-between h-10" type="button">
                 <span className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4" />
                   Academic Details
@@ -152,6 +191,22 @@ export const InputPanel = ({
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-3">
+              {/* Profile Selector */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Quick Load Profile</Label>
+              <AcademicProfileSelector
+                  onProfileLoad={handleProfileLoad}
+                  currentValues={{
+                    authorName: academicConfig.academicDetails.authorName || "",
+                    studentId: academicConfig.academicDetails.studentId || "",
+                    institution: academicConfig.academicDetails.institution || "",
+                    department: academicConfig.academicDetails.department || "",
+                    course: academicConfig.academicDetails.course || "",
+                    supervisorName: academicConfig.academicDetails.supervisorName || "",
+                  }}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="authorName" className="text-xs">Author Name</Label>
@@ -160,7 +215,7 @@ export const InputPanel = ({
                     placeholder="Your Name"
                     value={academicConfig.academicDetails.authorName}
                     onChange={(e) => updateAcademicDetails('authorName', e.target.value)}
-                    className="bg-input border-border h-9"
+                    className="bg-background border-border h-9 text-sm"
                   />
                 </div>
                 <div className="space-y-1">
@@ -170,7 +225,7 @@ export const InputPanel = ({
                     placeholder="e.g., 2024001"
                     value={academicConfig.academicDetails.studentId}
                     onChange={(e) => updateAcademicDetails('studentId', e.target.value)}
-                    className="bg-input border-border h-9"
+                    className="bg-background border-border h-9 text-sm"
                   />
                 </div>
               </div>
@@ -182,7 +237,7 @@ export const InputPanel = ({
                   placeholder="University Name"
                   value={academicConfig.academicDetails.institution}
                   onChange={(e) => updateAcademicDetails('institution', e.target.value)}
-                  className="bg-input border-border h-9"
+                  className="bg-background border-border h-9 text-sm"
                 />
               </div>
               
@@ -194,7 +249,7 @@ export const InputPanel = ({
                     placeholder="e.g., Computer Science"
                     value={academicConfig.academicDetails.department}
                     onChange={(e) => updateAcademicDetails('department', e.target.value)}
-                    className="bg-input border-border h-9"
+                    className="bg-background border-border h-9 text-sm"
                   />
                 </div>
                 <div className="space-y-1">
@@ -204,7 +259,7 @@ export const InputPanel = ({
                     placeholder="e.g., B.Tech"
                     value={academicConfig.academicDetails.course}
                     onChange={(e) => updateAcademicDetails('course', e.target.value)}
-                    className="bg-input border-border h-9"
+                    className="bg-background border-border h-9 text-sm"
                   />
                 </div>
               </div>
@@ -217,7 +272,7 @@ export const InputPanel = ({
                     placeholder="Prof. Name"
                     value={academicConfig.academicDetails.supervisorName}
                     onChange={(e) => updateAcademicDetails('supervisorName', e.target.value)}
-                    className="bg-input border-border h-9"
+                    className="bg-background border-border h-9 text-sm"
                   />
                 </div>
                 <div className="space-y-1">
@@ -227,7 +282,7 @@ export const InputPanel = ({
                     type="date"
                     value={academicConfig.academicDetails.submissionDate}
                     onChange={(e) => updateAcademicDetails('submissionDate', e.target.value)}
-                    className="bg-input border-border h-9"
+                    className="bg-background border-border h-9 text-sm"
                   />
                 </div>
               </div>
@@ -235,7 +290,7 @@ export const InputPanel = ({
           </Collapsible>
 
           {/* Document Structure Options */}
-          <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
+          <div className="space-y-3 p-3 bg-muted/30 rounded-lg border border-border/50">
             <Label className="text-sm font-medium">Document Structure</Label>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center space-x-2">
@@ -278,7 +333,7 @@ export const InputPanel = ({
                 value={academicConfig.structure.citationStyle}
                 onValueChange={(value: CitationStyle) => updateStructure('citationStyle', value)}
               >
-                <SelectTrigger className="bg-input border-border h-9">
+                <SelectTrigger className="bg-background border-border h-9 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -294,8 +349,8 @@ export const InputPanel = ({
 
           {/* File Upload - Document Source */}
           <div className="space-y-2">
-            <Label>Upload Reference Document (Optional)</Label>
-            <p className="text-xs text-muted-foreground mb-2">
+            <Label className="text-sm font-medium">Upload Reference Document (Optional)</Label>
+            <p className="text-xs text-muted-foreground">
               Upload a document for AI to analyze and incorporate
             </p>
             <FileUploader onFileContent={setDocumentContent} />
@@ -309,7 +364,7 @@ export const InputPanel = ({
           {/* Additional Instructions */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <Label htmlFor="instructions">Report Focus / Requirements</Label>
+              <Label htmlFor="instructions" className="text-sm font-medium">Report Focus / Requirements</Label>
               <span className="text-xs text-muted-foreground">
                 {characterCount} / {maxChars}
               </span>
@@ -321,19 +376,17 @@ export const InputPanel = ({
 Examples:
 • Focus on recent developments (2020-2024)
 • Include case studies from India
-• Emphasize practical applications
-• Compare different methodologies
-• Include statistical analysis"
+• Emphasize practical applications"
               value={additionalInstructions}
               onChange={(e) => setAdditionalInstructions(e.target.value.slice(0, maxChars))}
-              className="bg-input border-border min-h-[120px] resize-none"
-              rows={5}
+              className="bg-background border-border min-h-[100px] resize-none text-sm"
+              rows={4}
             />
           </div>
 
           {/* Template Selector */}
           <div className="space-y-2">
-            <Label>Export Template Style</Label>
+            <Label className="text-sm font-medium">Export Template Style</Label>
             <TemplateSelector
               selectedTemplate={selectedTemplate}
               onTemplateChange={setSelectedTemplate}
@@ -341,7 +394,7 @@ Examples:
           </div>
 
           {/* Processing Options */}
-          <div className="space-y-3 pt-2">
+          <div className="space-y-3 p-3 bg-muted/30 rounded-lg border border-border/50">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="regex" className="text-sm">Smart Data Extraction</Label>
@@ -372,25 +425,23 @@ Examples:
           </div>
 
           {/* Action Button */}
-          <div className="pt-3">
-            <Button 
-              type="submit" 
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-11"
-              disabled={!title.trim() || isGenerating}
-            >
-              {isGenerating ? (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                  Generating Academic Report...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Generate Academic Report
-                </>
-              )}
-            </Button>
-          </div>
+          <Button 
+            type="submit" 
+            className="w-full h-11 text-base font-medium"
+            disabled={!title.trim() || isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate Academic Report
+              </>
+            )}
+          </Button>
         </form>
       </CardContent>
     </Card>
