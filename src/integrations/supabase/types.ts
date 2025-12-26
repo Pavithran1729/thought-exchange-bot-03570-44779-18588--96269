@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_profiles: {
+        Row: {
+          author_name: string | null
+          course: string | null
+          created_at: string
+          department: string | null
+          id: string
+          institution: string | null
+          is_default: boolean | null
+          name: string
+          student_id: string | null
+          supervisor_name: string | null
+          user_id: string
+        }
+        Insert: {
+          author_name?: string | null
+          course?: string | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          institution?: string | null
+          is_default?: boolean | null
+          name: string
+          student_id?: string | null
+          supervisor_name?: string | null
+          user_id: string
+        }
+        Update: {
+          author_name?: string | null
+          course?: string | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          institution?: string | null
+          is_default?: boolean | null
+          name?: string
+          student_id?: string | null
+          supervisor_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       citations: {
         Row: {
           authors: string[] | null
