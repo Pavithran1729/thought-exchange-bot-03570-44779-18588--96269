@@ -113,28 +113,29 @@ export const PreviewPanel = ({
   };
 
   return (
-    <Card className="glass-morphism border-primary/20 h-full flex flex-col">
-      <CardHeader>
-        <div className="flex flex-col gap-3">
+    <Card className="glass-morphism border-primary/20 h-auto md:h-full flex flex-col">
+      <CardHeader className="pb-2 md:pb-4">
+        <div className="flex flex-col gap-2 md:gap-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-primary" />
-              Live Preview
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <Eye className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+              <span className="hidden sm:inline">Live Preview</span>
+              <span className="sm:hidden">Preview</span>
             </CardTitle>
             {hasContent && (
               <Button 
                 onClick={onExportClick}
                 size="sm"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1 md:gap-2 text-xs md:text-sm"
               >
-                <Download className="h-4 w-4" />
-                Export
+                <Download className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Export</span>
               </Button>
             )}
           </div>
           
           {hasContent && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1 md:gap-2">
               <Button
                 variant={isEditMode ? "default" : "outline"}
                 size="sm"
@@ -145,58 +146,60 @@ export const PreviewPanel = ({
                   }
                   setIsEditMode(!isEditMode);
                 }}
-                className="gap-2"
+                className="gap-1 h-8 px-2 md:px-3"
               >
                 {isEditMode ? (
                   <>
-                    <Save className="h-4 w-4" />
-                    <span className="hidden sm:inline">Save</span>
+                    <Save className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden sm:inline text-xs md:text-sm">Save</span>
                   </>
                 ) : (
                   <>
-                    <Edit className="h-4 w-4" />
-                    <span className="hidden sm:inline">Edit</span>
+                    <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden sm:inline text-xs md:text-sm">Edit</span>
                   </>
                 )}
               </Button>
               
               {!isEditMode && (
                 <>
-                  <TemplateSelector 
-                    selectedTemplate={selectedTemplate}
-                    onTemplateChange={setSelectedTemplate}
-                  />
+                  <div className="hidden sm:block">
+                    <TemplateSelector 
+                      selectedTemplate={selectedTemplate}
+                      onTemplateChange={setSelectedTemplate}
+                    />
+                  </div>
                   
                   <Button
                     variant={isHighlightMode ? "default" : "outline"}
                     size="sm"
                     onClick={() => setIsHighlightMode(!isHighlightMode)}
-                    className="gap-2"
+                    className="gap-1 h-8 px-2 md:px-3 hidden sm:flex"
                   >
-                    <Highlighter className="h-4 w-4" />
-                    <span className="hidden sm:inline">Highlight</span>
+                    <Highlighter className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden md:inline text-xs md:text-sm">Highlight</span>
                   </Button>
                   
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setIsStatsOpen(true)}
-                    className="gap-2"
+                    className="gap-1 h-8 px-2 md:px-3 hidden sm:flex"
                   >
-                    <BarChart3 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Stats</span>
+                    <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden md:inline text-xs md:text-sm">Stats</span>
                   </Button>
                 </>
               )}
               
-              <div className="flex items-center gap-1 ml-auto">
+              <div className="hidden md:flex items-center gap-1 ml-auto">
                 {/* Preview type toggle */}
                 <div className="flex items-center gap-1 mr-2 border-r border-border pr-2">
                   <Button
                     variant={previewType === 'scroll' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setPreviewType('scroll')}
-                    className="px-2 gap-1"
+                    className="px-2 h-8"
                     title="Scroll View"
                   >
                     <ScrollText className="h-4 w-4" />
@@ -205,7 +208,7 @@ export const PreviewPanel = ({
                     variant={previewType === 'page' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setPreviewType('page')}
-                    className="px-2 gap-1"
+                    className="px-2 h-8"
                     title="Page View (MS Word style)"
                   >
                     <FileText className="h-4 w-4" />
@@ -217,7 +220,7 @@ export const PreviewPanel = ({
                   variant={showOutline ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setShowOutline(!showOutline)}
-                  className="px-2"
+                  className="px-2 h-8"
                   title="Document Outline"
                 >
                   {showOutline ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
@@ -228,7 +231,7 @@ export const PreviewPanel = ({
                   variant={viewMode === 'desktop' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('desktop')}
-                  className="px-2"
+                  className="px-2 h-8"
                 >
                   <Monitor className="h-4 w-4" />
                 </Button>
@@ -236,7 +239,7 @@ export const PreviewPanel = ({
                   variant={viewMode === 'tablet' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('tablet')}
-                  className="px-2"
+                  className="px-2 h-8"
                 >
                   <Tablet className="h-4 w-4" />
                 </Button>
@@ -244,7 +247,7 @@ export const PreviewPanel = ({
                   variant={viewMode === 'mobile' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('mobile')}
-                  className="px-2"
+                  className="px-2 h-8"
                 >
                   <Smartphone className="h-4 w-4" />
                 </Button>
@@ -253,7 +256,7 @@ export const PreviewPanel = ({
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 overflow-auto flex flex-col">
+      <CardContent className="flex-1 overflow-auto flex flex-col min-h-0">
         {!hasContent ? (
           <div className="flex-1 flex items-center justify-center text-center p-8">
             <div className="space-y-4">

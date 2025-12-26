@@ -132,14 +132,14 @@ export const InputPanel = ({
   const maxChars = 2000;
 
   return (
-    <Card className="premium-card h-full">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <GraduationCap className="h-5 w-5 text-primary" />
-          Academic Report Generator
+    <Card className="premium-card h-auto md:h-full">
+      <CardHeader className="pb-3 md:pb-4">
+        <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+          <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+          <span className="truncate">Academic Report Generator</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 md:space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Report Type */}
           <div className="space-y-2">
@@ -207,7 +207,7 @@ export const InputPanel = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="authorName" className="text-xs">Author Name</Label>
                   <Input
@@ -241,7 +241,7 @@ export const InputPanel = ({
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="department" className="text-xs">Department</Label>
                   <Input
@@ -264,7 +264,7 @@ export const InputPanel = ({
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="supervisorName" className="text-xs">Supervisor Name</Label>
                   <Input
@@ -291,8 +291,8 @@ export const InputPanel = ({
 
           {/* Document Structure Options */}
           <div className="space-y-3 p-3 bg-muted/30 rounded-lg border border-border/50">
-            <Label className="text-sm font-medium">Document Structure</Label>
-            <div className="grid grid-cols-2 gap-3">
+            <Label className="text-xs md:text-sm font-medium">Document Structure</Label>
+            <div className="grid grid-cols-2 gap-2 md:gap-3">
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="coverPage" 

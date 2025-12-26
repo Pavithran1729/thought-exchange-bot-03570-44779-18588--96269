@@ -366,13 +366,13 @@ const Generator = () => {
         </header>
 
         {/* Mobile Panel Switcher */}
-        <div className="md:hidden flex border-b border-border/50 bg-muted/30">
+        <div className="md:hidden flex border-b border-border/50 bg-muted/30 sticky top-0 z-10">
           <button
             onClick={() => setActivePanel('input')}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               activePanel === 'input' 
                 ? 'text-primary border-b-2 border-primary bg-background' 
-                : 'text-muted-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Input
@@ -382,7 +382,7 @@ const Generator = () => {
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               activePanel === 'preview' 
                 ? 'text-primary border-b-2 border-primary bg-background' 
-                : 'text-muted-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Preview
@@ -390,10 +390,10 @@ const Generator = () => {
         </div>
 
         {/* Main Content - Responsive Layout */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {/* Desktop: Side by Side */}
           <div className="hidden md:grid h-full grid-cols-[400px_1fr] lg:grid-cols-[450px_1fr] gap-4 p-4">
-            <div className="overflow-y-auto">
+            <div className="overflow-y-auto scrollbar-thin">
               <InputPanel 
                 onGenerate={handleGenerate} 
                 isGenerating={isGenerating}
@@ -402,7 +402,7 @@ const Generator = () => {
                 initialTemplateId={reportData.templateId}
               />
             </div>
-            <div className="overflow-y-auto">
+            <div className="overflow-y-auto scrollbar-thin">
               <PreviewPanel
                 title={reportData.title}
                 content={reportData.content}
@@ -419,31 +419,33 @@ const Generator = () => {
             </div>
           </div>
 
-          {/* Mobile: Single Panel */}
-          <div className="md:hidden h-full overflow-y-auto p-4">
-            {activePanel === 'input' ? (
-              <InputPanel 
-                onGenerate={handleGenerate} 
-                isGenerating={isGenerating}
-                initialTitle={reportData.title}
-                initialContent=""
-                initialTemplateId={reportData.templateId}
-              />
-            ) : (
-              <PreviewPanel
-                title={reportData.title}
-                content={reportData.content}
-                extractedData={reportData.extractedData}
-                onExportClick={() => setIsExportDialogOpen(true)}
-                selectedTemplateId={reportData.templateId}
-                onContentChange={(newContent) => {
-                  setReportData((prev) => ({ ...prev, content: newContent }));
-                }}
-                onTitleChange={(newTitle) => {
-                  setReportData((prev) => ({ ...prev, title: newTitle }));
-                }}
-              />
-            )}
+          {/* Mobile: Single Panel with proper scrolling */}
+          <div className="md:hidden h-full flex flex-col">
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 pb-6">
+              {activePanel === 'input' ? (
+                <InputPanel 
+                  onGenerate={handleGenerate} 
+                  isGenerating={isGenerating}
+                  initialTitle={reportData.title}
+                  initialContent=""
+                  initialTemplateId={reportData.templateId}
+                />
+              ) : (
+                <PreviewPanel
+                  title={reportData.title}
+                  content={reportData.content}
+                  extractedData={reportData.extractedData}
+                  onExportClick={() => setIsExportDialogOpen(true)}
+                  selectedTemplateId={reportData.templateId}
+                  onContentChange={(newContent) => {
+                    setReportData((prev) => ({ ...prev, content: newContent }));
+                  }}
+                  onTitleChange={(newTitle) => {
+                    setReportData((prev) => ({ ...prev, title: newTitle }));
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
 
